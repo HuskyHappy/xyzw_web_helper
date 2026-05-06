@@ -37,7 +37,7 @@ const router = useRouter();
 <style scoped lang="scss">
 .not-found-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #3b82f6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,7 +46,7 @@ const router = useRouter();
 
 /* 深色主题下背景 */
 [data-theme="dark"] .not-found-page {
-  background: linear-gradient(135deg, #0f172a 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
 }
 
 .error-content {

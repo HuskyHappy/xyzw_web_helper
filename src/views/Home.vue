@@ -343,7 +343,7 @@ onMounted(() => {
 <style scoped lang="scss">
 .home-page {
   min-height: 100dvh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #3b82f6 100%);
   position: relative;
   overflow-x: hidden;
   padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
@@ -596,7 +596,7 @@ onMounted(() => {
 // 统计区域
 .stats-section {
   padding: var(--spacing-2xl) 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #3b82f6 100%);
 }
 
 /* 深色主题下统计区背景 */

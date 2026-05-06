@@ -149,7 +149,7 @@ const getTypeLabel = (type) => {
   font-weight: 700;
   padding: 8px 16px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
   color: white;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
@@ -273,7 +273,7 @@ const getTypeLabel = (type) => {
   --bg-color: #f9fafb;
   --text-primary: #1f2937;
   --text-secondary: #6b7280;
-  --primary-color: #667eea;
+  --primary-color: #3b82f6;
 }
 
 @media (prefers-color-scheme: dark) {

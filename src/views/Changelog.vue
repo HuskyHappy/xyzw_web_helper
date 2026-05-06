@@ -336,7 +336,7 @@ onMounted(() => {
 }
 
 .subscribe-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
   border-radius: 12px;
   padding: 32px;
   display: flex;
@@ -369,7 +369,7 @@ onMounted(() => {
 .subscribe-btn {
   padding: 12px 32px;
   background: white;
-  color: #667eea;
+  color: #3b82f6;
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -406,7 +406,7 @@ onMounted(() => {
   --border-color: #e5e7eb;
   --text-primary: #1f2937;
   --text-secondary: #6b7280;
-  --primary-color: #667eea;
+  --primary-color: #3b82f6;
 }
 
 @media (prefers-color-scheme: dark) {

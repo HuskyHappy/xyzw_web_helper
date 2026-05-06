@@ -1634,13 +1634,13 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .token-import-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
   padding: var(--spacing-xl) 0;
 }
 
 /* 深色主题下的页面背景 */
 [data-theme="dark"] .token-import-page {
-  background: linear-gradient(135deg, #0f172a 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
 }
 
 .container {

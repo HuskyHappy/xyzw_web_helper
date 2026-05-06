@@ -422,7 +422,7 @@ const drawHexagon = (x, y, color, type) => {
 
 // 联盟颜色映射
 const allianceColors = {
-  大联盟: "#667eea", // var(--primary-color)
+  大联盟: "#3b82f6", // var(--primary-color)
   梦盟: "#18a058", // var(--success-color)
   正义联盟: "#2080f0", // var(--info-color)
   龙盟: "#d03050", // var(--error-color)

@@ -2531,7 +2531,7 @@ onMounted(() => {});
 // 联盟分类标签栏
 .alliance-tabs-section {
   display: flex;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
   padding: var(--spacing-xs);
   gap: var(--spacing-xs);
   flex-shrink: 0;

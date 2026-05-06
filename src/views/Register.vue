@@ -224,7 +224,7 @@ const handleRegister = async () => {
 <style scoped lang="scss">
 .register-page {
   min-height: 100dvh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,7 +234,7 @@ const handleRegister = async () => {
 
 /* 深色主题下背景 */
 [data-theme="dark"] .register-page {
-  background: linear-gradient(135deg, #0f172a 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
 }
 
 .register-container {

@@ -150,8 +150,11 @@ const router = createRouter({
   }
 })
 
-// 热更新路由
-autoRoutes.handleHotUpdate?.(router);
+// 热更新路由（仅开发模式）
+// 注：autoRoutes.handleHotUpdate 在某些版本不可用，已禁用
+// if (import.meta.hot && autoRoutes.handleHotUpdate) {
+//   autoRoutes.handleHotUpdate(router);
+// }
 
 // 导航守卫
 router.beforeEach((to, from, next) => {
