@@ -87,6 +87,7 @@
           <n-space align="center">
             <h2>我的Token列表 ({{ tokenStore.gameTokens.length }}个)</h2>
             <n-radio-group v-model:value="viewMode" size="small">
+              <n-radio-button value="table">表格</n-radio-button>
               <n-radio-button value="list">列表</n-radio-button>
               <n-radio-button value="card">卡片</n-radio-button>
             </n-radio-group>
@@ -119,6 +120,14 @@
             </n-button-group>
           </n-space>
           <div class="header-actions">
+            <n-button type="default" @click="goHome">
+              <template #icon>
+                <n-icon>
+                  <Home />
+                </n-icon>
+              </template>
+              主页
+            </n-button>
             <n-button type="success" @click="goToDashboard">
               <template #icon>
                 <n-icon>
@@ -347,8 +356,20 @@
           </a-card>
         </div>
 
+        <!-- Table View -->
+        <div class="tokens-table" v-if="viewMode === 'table'">
+          <n-data-table
+            :columns="tableColumns"
+            :data="sortedTokens"
+            :row-key="(row) => row.id"
+            :pagination="{ pageSize: 10 }"
+            :bordered="false"
+            @update:checked-row-keys="handleTableCheck"
+          />
+        </div>
+
         <!-- List View -->
-        <div class="tokens-list" v-else>
+        <div class="tokens-list" v-else-if="viewMode === 'list'">
           <n-card
             v-for="(token, index) in sortedTokens"
             :key="token.id"
@@ -633,7 +654,7 @@ import {
   SyncCircle,
   TrashBin,
 } from "@vicons/ionicons5";
-import { NIcon, NAlert, useDialog, useMessage } from "naive-ui";
+import { NIcon, NAlert, NTag, NButton, NSpace, useDialog, useMessage } from "naive-ui";
 import { h, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { transformToken, scheduleAuthUserRequest } from "@/utils/token";
@@ -758,6 +779,56 @@ const toggleSort = (field) => {
 const getSortIcon = (field) => {
   if (sortConfig.value.field !== field) return null;
   return sortConfig.value.direction === "asc" ? "↑" : "↓";
+};
+
+// 表格列定义
+const tableColumns = [
+  {
+    title: "名称",
+    key: "name",
+    render: (row) => h('span', { style: { fontWeight: 'bold' } }, row.name)
+  },
+  {
+    title: "服务器",
+    key: "server",
+    render: (row) => h(NTag, { size: 'small', type: getServerTagType(row.id) }, () => row.server || '-')
+  },
+  {
+    title: "连接状态",
+    key: "status",
+    render: (row) => h('span', getConnectionStatusText(row.id))
+  },
+  {
+    title: "存储类型",
+    key: "storage",
+    render: (row) => {
+      const isPermanent = row.importMethod === 'url' || row.importMethod === 'bin' || row.importMethod === 'wxQrcode' || row.upgradedToPermanent;
+      return h(NTag, { size: 'small', type: isPermanent ? 'success' : 'warning' }, () => isPermanent ? '长期有效' : '临时存储');
+    }
+  },
+  {
+    title: "创建时间",
+    key: "createdAt",
+    render: (row) => formatTime(row.createdAt)
+  },
+  {
+    title: "最后使用",
+    key: "lastUsed",
+    render: (row) => formatTime(row.lastUsed) || '-'
+  },
+  {
+    title: "操作",
+    key: "actions",
+    render: (row) => h(NSpace, {}, () => [
+      h(NButton, { size: 'small', onClick: () => selectToken(row) }, () => '选择'),
+      h(NButton, { size: 'small', loading: refreshingTokens.value.has(row.id), onClick: () => refreshToken(row) }, () => '刷新'),
+      h(NButton, { size: 'small', type: 'error', onClick: () => handleTokenAction('delete', row) }, () => '删除')
+    ])
+  }
+];
+
+const handleTableCheck = (keys) => {
+  console.log('Checked rows:', keys);
 };
 
 const handleDragStart = (index, event) => {
@@ -1506,6 +1577,10 @@ const goToDashboard = () => {
   router.push("/admin/batch-daily-tasks");
 };
 
+const goHome = () => {
+  router.push("/");
+};
+
 // 开始任务管理 - 直接跳转到控制台
 const startTaskManagement = (token) => {
   // 选择token
@@ -1614,7 +1689,7 @@ const handleRateLimitWaiting = (data) => {
 
 // 生命周期
 onMounted(async () => {
-  tokenStore.initTokenStore();
+  await tokenStore.initTokenStore();
 
   // 监听限流等待事件
   $emit.on("token:refresh:waiting", handleRateLimitWaiting);

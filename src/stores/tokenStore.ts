@@ -1424,24 +1424,28 @@ export const useTokenStore = defineStore("tokens", () => {
     });
   };
 
+  // 初始化标志
+  const isInitialized = ref(false);
+
   // 初始化
-  const initTokenStore = () => {
-    // // 恢复数据
-    // const savedTokens = localStorage.getItem('gameTokens')
-    // const savedSelectedId = localStorage.getItem('selectedTokenId')
-
-    // if (savedTokens) {
-    //   try {
-    //     gameTokens.value = JSON.parse(savedTokens)
-    //   } catch (error) {
-    //     tokenLogger.error('解析Token数据失败:', error.message)
-    //     gameTokens.value = []
-    //   }
-    // }
-
-    // if (savedSelectedId) {
-    //   selectedTokenId.value = savedSelectedId
-    // }
+  const initTokenStore = async () => {
+    if (isInitialized.value) return;
+    
+    try {
+      // 从 Supabase 加载 tokens
+      const tokens = await tokenApi.getAll();
+      if (tokens && Array.isArray(tokens)) {
+        gameTokens.value = tokens.map(t => ({
+          ...t,
+          lastRefreshed: t.lastRefreshed ? new Date(t.lastRefreshed).getTime() : undefined,
+        }));
+        tokenLogger.info(`从 Supabase 加载了 ${tokens.length} 个 tokens`);
+      }
+    } catch (err) {
+      tokenLogger.warn('从 Supabase 加载 tokens 失败，使用本地数据:', err);
+    }
+    
+    isInitialized.value = true;
 
     // 清理过期token
     cleanExpiredTokens();
@@ -1620,6 +1624,7 @@ export const useTokenStore = defineStore("tokens", () => {
     cleanExpiredTokens,
     upgradeTokenToPermanent,
     initTokenStore,
+    isInitialized,
 
     //游戏内发送消息方法
     sendMessageToLegion,
