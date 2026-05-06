@@ -25,6 +25,7 @@ api.interceptors.response.use(
 
 // ==================== Token API ====================
 export const tokenApi = {
+  getAll: () => api.get('/api/tokens'),
   list: () => api.get('/api/tokens'),
   create: (data) => api.post('/api/tokens', data),
   update: (id, data) => api.patch(`/api/tokens/${id}`, data),

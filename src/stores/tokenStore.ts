@@ -207,7 +207,7 @@ export const useTokenStore = defineStore("tokens", () => {
   };
 
   // Token管理
-  const addToken = (tokenData: TokenData) => {
+  const addToken = async (tokenData: TokenData) => {
     let id =
       tokenData.id ||
       `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -231,6 +231,15 @@ export const useTokenStore = defineStore("tokens", () => {
     };
 
     gameTokens.value.push(newToken);
+    
+    // 同步到 Supabase
+    try {
+      await tokenApi.create(newToken);
+      tokenLogger.info(`Token 已同步到 Supabase: ${newToken.name}`);
+    } catch (err) {
+      tokenLogger.warn('Supabase 同步失败:', err);
+    }
+    
     return newToken;
   };
 
@@ -572,7 +581,7 @@ export const useTokenStore = defineStore("tokens", () => {
     }
   };
 
-  const importBase64Token = (
+  const importBase64Token = async (
     name: string,
     base64String: string,
     additionalInfo = {},
@@ -595,7 +604,7 @@ export const useTokenStore = defineStore("tokens", () => {
     };
 
     try {
-      const newToken = addToken(tokenData);
+      const newToken = await addToken(tokenData);
 
       // 添加更多验证信息到成功消息
       const tokenInfo = parseResult.data.actualToken;

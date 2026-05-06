@@ -182,21 +182,21 @@ const handleImport = async () => {
     message.error("请先上传bin文件！");
     return;
   }
-  roleList.value.forEach((role) => {
+  for (const role of roleList.value) {
     // tokenStore.gameTokens中发现已存在的重复名称，则移出token后重新添加
     const gameToken = tokenStore.gameTokens.find((t) => t.id === role.id);
     if (gameToken) {
       console.log("移除同名token:", gameToken);
       // tokenStore.removeToken(gameToken.id);
-      tokenStore.updateToken(gameToken.id, {
+      await tokenStore.updateToken(gameToken.id, {
         ...role,
       });
     } else {
-      tokenStore.addToken({
+      await tokenStore.addToken({
         ...role,
       });
     }
-  });
+  }
   console.log("当前Token列表:", tokenStore.gameTokens);
   message.success("Token添加成功");
   roleList.value = [];

@@ -145,7 +145,7 @@ const handleUrlImport = async () => {
         sourceUrl: urlForm.url,
         importMethod: 'url'
       };
-      tokenStore.addToken(newToken);
+      await tokenStore.addToken(newToken);
       message.success("Token添加成功");
       // 重置表单
       urlForm.name = "";
