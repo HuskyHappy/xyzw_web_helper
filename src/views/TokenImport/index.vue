@@ -138,6 +138,37 @@
                 <template #icon><n-icon><Add /></n-icon></template>
                 添加Token
               </n-button>
+              <n-divider vertical style="height: 24px"></n-divider>
+              <n-button-group size="small">
+                <n-button @click="refreshAllTokens">
+                  <template #icon><n-icon><Refresh /></n-icon></template>
+                  刷新
+                </n-button>
+                <n-button @click="handleBulkAction('updateInfo')">
+                  <template #icon><n-icon><Settings /></n-icon></template>
+                  更新
+                </n-button>
+                <n-button @click="handleBulkAction('export')">
+                  <template #icon><n-icon><Download /></n-icon></template>
+                  导出
+                </n-button>
+                <n-button @click="handleBulkAction('import')">
+                  <template #icon><n-icon><CloudUpload /></n-icon></template>
+                  导入
+                </n-button>
+                <n-button @click="handleBulkAction('clean')">
+                  <template #icon><n-icon><Trash /></n-icon></template>
+                  清理
+                </n-button>
+                <n-button @click="handleBulkAction('disconnect')">
+                  <template #icon><n-icon><CloseCircle /></n-icon></template>
+                  断开
+                </n-button>
+                <n-button type="error" @click="clearSelectedTokens">
+                  <template #icon><n-icon><Trash /></n-icon></template>
+                  清除选择
+                </n-button>
+              </n-button-group>
             </n-space>
           </div>
         </div>
@@ -343,6 +374,7 @@
             :row-key="(row) => row.id"
             :pagination="{ pageSize: 50 }"
             :bordered="false"
+            :max-height="600"
             @update:checked-row-keys="handleTableCheck"
           />
         </div>
