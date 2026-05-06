@@ -150,16 +150,36 @@
               添加Token
             </n-button>
 
-            <n-dropdown :options="bulkOptions" @select="handleBulkAction">
-              <n-button>
-                <template #icon>
-                  <n-icon>
-                    <Menu />
-                  </n-icon>
-                </template>
-                批量操作
+            <n-button-group size="small">
+              <n-button @click="refreshAllTokens">
+                <template #icon><n-icon><Refresh /></n-icon></template>
+                刷新
               </n-button>
-            </n-dropdown>
+              <n-button @click="handleBulkAction('updateInfo')">
+                <template #icon><n-icon><Settings /></n-icon></template>
+                更新
+              </n-button>
+              <n-button @click="handleBulkAction('export')">
+                <template #icon><n-icon><Download /></n-icon></template>
+                导出
+              </n-button>
+              <n-button @click="handleBulkAction('import')">
+                <template #icon><n-icon><CloudUpload /></n-icon></template>
+                导入
+              </n-button>
+              <n-button @click="handleBulkAction('clean')">
+                <template #icon><n-icon><Trash /></n-icon></template>
+                清理
+              </n-button>
+              <n-button @click="handleBulkAction('disconnect')">
+                <template #icon><n-icon><CloseCircle /></n-icon></template>
+                断开
+              </n-button>
+              <n-button type="error" @click="clearSelectedTokens">
+                <template #icon><n-icon><Trash /></n-icon></template>
+                清除选择
+              </n-button>
+            </n-button-group>
           </div>
         </div>
 
@@ -362,7 +382,8 @@
             :columns="tableColumns"
             :data="sortedTokens"
             :row-key="(row) => row.id"
-            :pagination="{ pageSize: 10 }"
+            v-model:checked-row-keys="selectedTokenIds"
+            :pagination="{ pageSize: 50 }"
             :bordered="false"
             @update:checked-row-keys="handleTableCheck"
           />
@@ -653,6 +674,11 @@ import {
   Star,
   SyncCircle,
   TrashBin,
+  Settings,
+  Download,
+  CloudUpload,
+  Trash,
+  CloseCircle,
 } from "@vicons/ionicons5";
 import { NIcon, NAlert, NTag, NButton, NSpace, useDialog, useMessage } from "naive-ui";
 import { h, onMounted, onUnmounted, reactive, ref, watch } from "vue";
@@ -692,6 +718,7 @@ const editingToken = ref(null);
 const importMethod = ref("manual");
 const refreshingTokens = ref(new Set());
 const connectingTokens = ref(new Set());
+const selectedTokenIds = ref([]);
 // 从localStorage读取上次的视图模式，默认为列表视图
 const viewMode = ref(localStorage.getItem("tokenViewMode") || "list");
 const dragIndex = ref(null);
@@ -784,6 +811,15 @@ const getSortIcon = (field) => {
 // 表格列定义
 const tableColumns = [
   {
+    type: 'selection'
+  },
+  {
+    title: '序号',
+    key: 'index',
+    width: 60,
+    render: (row, index) => index + 1
+  },
+  {
     title: "名称",
     key: "name",
     render: (row) => h('span', { style: { fontWeight: 'bold' } }, row.name)
@@ -819,9 +855,12 @@ const tableColumns = [
   {
     title: "操作",
     key: "actions",
-    render: (row) => h(NSpace, {}, () => [
-      h(NButton, { size: 'small', onClick: () => selectToken(row) }, () => '选择'),
+    width: 200,
+    render: (row) => h(NSpace, { size: 'small' }, () => [
+      h(NButton, { size: 'small', type: 'primary', onClick: () => selectToken(row) }, () => '选择'),
       h(NButton, { size: 'small', loading: refreshingTokens.value.has(row.id), onClick: () => refreshToken(row) }, () => '刷新'),
+      h(NButton, { size: 'small', onClick: () => handleTokenAction('edit', row) }, () => '编辑'),
+      h(NButton, { size: 'small', onClick: () => handleTokenAction('copy', row) }, () => '复制'),
       h(NButton, { size: 'small', type: 'error', onClick: () => handleTokenAction('delete', row) }, () => '删除')
     ])
   }
@@ -1413,6 +1452,28 @@ const handleBulkAction = (key) => {
       clearAllTokens();
       break;
   }
+};
+
+// 清除选中的Token
+const clearSelectedTokens = async () => {
+  if (selectedTokenIds.value.length === 0) {
+    message.warning('请先选择要删除的Token');
+    return;
+  }
+  
+  dialog.warning({
+    title: '确认删除',
+    content: `确定要删除选中的 ${selectedTokenIds.value.length} 个Token吗？`,
+    positiveText: '删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      for (const id of selectedTokenIds.value) {
+        await tokenStore.removeToken(id);
+      }
+      selectedTokenIds.value = [];
+      message.success('已删除选中的Token');
+    }
+  });
 };
 
 const exportTokens = () => {

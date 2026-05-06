@@ -1336,7 +1336,13 @@ onMounted(() => {
 
 <style scoped>
 .dashboard-page {
+  min-height: 100vh;
   padding: 20px;
+  background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
+}
+
+[data-theme="dark"] .dashboard-page {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
 }
 .status-grid {
   margin-bottom: 20px;

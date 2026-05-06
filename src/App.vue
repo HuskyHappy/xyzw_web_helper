@@ -56,7 +56,7 @@ onUnmounted(() => {
 <style>
 /* 主题变量 */
 :root {
-  --app-background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
+  --app-background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
   --text-color: #333;
   --text-secondary: #666;
   --text-tertiary: #999;
@@ -66,7 +66,7 @@ onUnmounted(() => {
 
 /* 深色主题变量 */
 .dark {
-  --app-background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+  --app-background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
   --text-color: #ffffff !important;
   --text-secondary: #cbd5e0 !important;
   --text-tertiary: #a0aec0 !important;

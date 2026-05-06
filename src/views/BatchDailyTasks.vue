@@ -5879,10 +5879,14 @@ const stopBatch = () => {
 
 <style scoped>
 .batch-daily-tasks {
+  min-height: 100vh;
   padding: 20px;
-  height: 100vh;
+  background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
   box-sizing: border-box;
-  overflow: hidden;
+}
+
+[data-theme="dark"] .batch-daily-tasks {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
 }
 
 .main-layout {
