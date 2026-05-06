@@ -120,66 +120,25 @@
             </n-button-group>
           </n-space>
           <div class="header-actions">
-            <n-button type="default" @click="goHome">
-              <template #icon>
-                <n-icon>
-                  <Home />
-                </n-icon>
-              </template>
-              主页
-            </n-button>
-            <n-button type="success" @click="goToDashboard">
-              <template #icon>
-                <n-icon>
-                  <List />
-                </n-icon>
-              </template>
-              批量功能
-            </n-button>
-
-            <n-button
-              v-if="!showImportForm"
-              type="primary"
-              @click="showImportForm = true"
-            >
-              <template #icon>
-                <n-icon>
-                  <Add />
-                </n-icon>
-              </template>
-              添加Token
-            </n-button>
-
-            <n-button-group size="small">
-              <n-button @click="refreshAllTokens">
-                <template #icon><n-icon><Refresh /></n-icon></template>
-                刷新
+            <n-space align="center" :size="8">
+              <n-button type="default" size="small" @click="goHome">
+                <template #icon><n-icon><Home /></n-icon></template>
+                主页
               </n-button>
-              <n-button @click="handleBulkAction('updateInfo')">
-                <template #icon><n-icon><Settings /></n-icon></template>
-                更新
+              <n-button type="success" size="small" @click="goToDashboard">
+                <template #icon><n-icon><List /></n-icon></template>
+                批量功能
               </n-button>
-              <n-button @click="handleBulkAction('export')">
-                <template #icon><n-icon><Download /></n-icon></template>
-                导出
+              <n-button
+                v-if="!showImportForm"
+                type="primary"
+                size="small"
+                @click="showImportForm = true"
+              >
+                <template #icon><n-icon><Add /></n-icon></template>
+                添加Token
               </n-button>
-              <n-button @click="handleBulkAction('import')">
-                <template #icon><n-icon><CloudUpload /></n-icon></template>
-                导入
-              </n-button>
-              <n-button @click="handleBulkAction('clean')">
-                <template #icon><n-icon><Trash /></n-icon></template>
-                清理
-              </n-button>
-              <n-button @click="handleBulkAction('disconnect')">
-                <template #icon><n-icon><CloseCircle /></n-icon></template>
-                断开
-              </n-button>
-              <n-button type="error" @click="clearSelectedTokens">
-                <template #icon><n-icon><Trash /></n-icon></template>
-                清除选择
-              </n-button>
-            </n-button-group>
+            </n-space>
           </div>
         </div>
 
@@ -382,7 +341,6 @@
             :columns="tableColumns"
             :data="sortedTokens"
             :row-key="(row) => row.id"
-            v-model:checked-row-keys="selectedTokenIds"
             :pagination="{ pageSize: 50 }"
             :bordered="false"
             @update:checked-row-keys="handleTableCheck"
@@ -401,7 +359,7 @@
             size="small"
             style="margin-bottom: 8px"
             hoverable
-            @click="selectToken(token)"
+            @click="selectTokenAndConnect(token)"
             :class="{ active: selectedTokenId === token.id }"
           >
             <n-space justify="space-between" align="center">
@@ -499,52 +457,19 @@
               </n-space>
 
               <!-- Actions -->
-              <n-space>
-                <!-- 存储类型 -->
-                <n-tag
-                  size="small"
-                  :type="
-                    token.importMethod === 'url' ||
-                    token.importMethod === 'bin' ||
-                    token.importMethod === 'wxQrcode' ||
-                    token.upgradedToPermanent
-                      ? 'success'
-                      : 'warning'
-                  "
-                >
-                  {{
-                    token.importMethod === "url" ||
-                    token.importMethod === "bin" ||
-                    token.importMethod === "wxQrcode" ||
-                    token.upgradedToPermanent
-                      ? "长期"
-                      : "临时"
-                  }}
-                </n-tag>
-
-                <!-- 升级选项（仅对临时存储的token显示） -->
+              <n-space :size="4">
                 <n-button
-                  v-if="
-                    !(
-                      token.importMethod === 'url' ||
-                      token.importMethod === 'bin' ||
-                      token.importMethod === 'wxQrcode' ||
-                      token.upgradedToPermanent
-                    )
-                  "
                   size="small"
-                  type="success"
-                  ghost
-                  @click.stop="upgradeTokenToPermanent(token)"
+                  :loading="refreshingTokens.has(token.id)"
+                  @click.stop="refreshToken(token)"
                 >
                   <template #icon>
                     <n-icon>
-                      <Star />
+                      <Refresh />
                     </n-icon>
                   </template>
-                  升级
+                  刷新
                 </n-button>
-
                 <n-button
                   size="small"
                   type="primary"
@@ -560,28 +485,17 @@
                 </n-button>
                 <n-button
                   size="small"
-                  @click.stop="refreshToken(token)"
-                  :loading="refreshingTokens.has(token.id)"
+                  @click.stop="handleTokenAction('edit', token)"
                 >
-                  <template #icon>
-                    <n-icon>
-                      <Refresh />
-                    </n-icon>
-                  </template>
-                  刷新
+                  编辑
                 </n-button>
-                <n-dropdown
-                  :options="getTokenActions(token)"
-                  @select="(key) => handleTokenAction(key, token)"
+                <n-button
+                  size="small"
+                  type="error"
+                  @click.stop="handleTokenAction('delete', token)"
                 >
-                  <n-button size="small" circle @click.stop>
-                    <template #icon>
-                      <n-icon>
-                        <EllipsisHorizontal />
-                      </n-icon>
-                    </template>
-                  </n-button>
-                </n-dropdown>
+                  删除
+                </n-button>
               </n-space>
             </n-space>
           </n-card>
@@ -811,9 +725,6 @@ const getSortIcon = (field) => {
 // 表格列定义
 const tableColumns = [
   {
-    type: 'selection'
-  },
-  {
     title: '序号',
     key: 'index',
     width: 60,
@@ -835,14 +746,6 @@ const tableColumns = [
     render: (row) => h('span', getConnectionStatusText(row.id))
   },
   {
-    title: "存储类型",
-    key: "storage",
-    render: (row) => {
-      const isPermanent = row.importMethod === 'url' || row.importMethod === 'bin' || row.importMethod === 'wxQrcode' || row.upgradedToPermanent;
-      return h(NTag, { size: 'small', type: isPermanent ? 'success' : 'warning' }, () => isPermanent ? '长期有效' : '临时存储');
-    }
-  },
-  {
     title: "创建时间",
     key: "createdAt",
     render: (row) => formatTime(row.createdAt)
@@ -855,16 +758,26 @@ const tableColumns = [
   {
     title: "操作",
     key: "actions",
-    width: 200,
-    render: (row) => h(NSpace, { size: 'small' }, () => [
-      h(NButton, { size: 'small', type: 'primary', onClick: () => selectToken(row) }, () => '选择'),
+    width: 280,
+    render: (row) => h(NSpace, { size: 4, wrap: false }, () => [
       h(NButton, { size: 'small', loading: refreshingTokens.value.has(row.id), onClick: () => refreshToken(row) }, () => '刷新'),
-      h(NButton, { size: 'small', onClick: () => handleTokenAction('edit', row) }, () => '编辑'),
-      h(NButton, { size: 'small', onClick: () => handleTokenAction('copy', row) }, () => '复制'),
-      h(NButton, { size: 'small', type: 'error', onClick: () => handleTokenAction('delete', row) }, () => '删除')
+      h(NButton, { size: 'small', onClick: () => startTaskManagement(row) }, () => '控制台'),
+      h(NButton, { size: 'small', onClick: () => editToken(row) }, () => '编辑'),
+      h(NButton, { size: 'small', type: 'error', onClick: () => deleteToken(row) }, () => '删除')
     ])
   }
 ];
+
+// 点击行时选中并尝试连接
+const selectTokenAndConnect = (token) => {
+  selectToken(token);
+  startTaskManagement(token);
+};
+
+// 点击行时选中并尝试连接
+const handleRowClick = (row) => {
+  selectTokenAndConnect(row);
+};
 
 const handleTableCheck = (keys) => {
   console.log('Checked rows:', keys);
@@ -1247,6 +1160,9 @@ const handleTokenAction = async (key, token) => {
       break;
     case "copy":
       copyToken(token);
+      break;
+    case "console":
+      startTaskManagement(token);
       break;
     case "refresh":
       // 重新获取Token
