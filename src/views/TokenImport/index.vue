@@ -877,10 +877,10 @@ const refreshToken = async (token) => {
       });
 
       // 更新token信息
-      tokenStore.updateToken(token.id, {
+      await tokenStore.updateToken(token.id, {
         token: data.token,
         server: data.server || token.server,
-        lastRefreshed: Date.now(),
+        lastRefreshed: new Date().toISOString(),
       });
 
       message.success("Token刷新成功");
@@ -896,9 +896,9 @@ const refreshToken = async (token) => {
       }
       if (userToken) {
         const newToken = await transformToken(userToken);
-        tokenStore.updateToken(token.id, {
+        await tokenStore.updateToken(token.id, {
           token: newToken,
-          lastRefreshed: Date.now(),
+          lastRefreshed: new Date().toISOString(),
         });
         if (usedOldKey) {
           await storeArrayBuffer(token.id, userToken);
@@ -906,6 +906,9 @@ const refreshToken = async (token) => {
           console.log("已迁移IndexedDB数据:", token.name, "->", token.id);
         }
         message.success("Token刷新成功");
+      } else {
+        // IndexedDB 无数据时提示
+        message.error(`Token "${token.name}" 无本地数据，无法刷新。请重新导入。`);
       }
     } else {
       dialog.info({

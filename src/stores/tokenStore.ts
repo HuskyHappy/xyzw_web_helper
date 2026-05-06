@@ -15,6 +15,7 @@ import {
 } from "@/utils/token";
 import { emitPlus, $emit } from "./events/index.js";
 import router from "@/router";
+import { tokenApi } from "@/utils/api.js";
 
 const { getArrayBuffer, storeArrayBuffer, deleteArrayBuffer, clearAll } =
   useIndexedDB();
@@ -32,6 +33,10 @@ declare interface TokenData {
   upgradedToPermanent?: boolean; // 是否升级为长期有效
   upgradedAt?: string; // 升级时间
   updatedAt?: string; // 更新时间
+  lastRefreshed?: string; // 上次刷新时间
+  lastUsed?: string; // 上次使用时间
+  level?: number; // 等级
+  profession?: string; // 职业
 }
 
 declare interface WebSocketConnection {
@@ -216,7 +221,8 @@ export const useTokenStore = defineStore("tokens", () => {
       level: tokenData.level || 1,
       profession: tokenData.profession || "",
       createdAt: new Date().toISOString(),
-      lastUsed: new Date().toISOString(),
+      lastUsed: tokenData.lastUsed || new Date().toISOString(),
+      lastRefreshed: tokenData.lastRefreshed || new Date().toISOString(),
       isActive: true,
       // URL获取相关信息
       sourceUrl: tokenData.sourceUrl || null, // Token来源URL（用于刷新）
@@ -228,7 +234,7 @@ export const useTokenStore = defineStore("tokens", () => {
     return newToken;
   };
 
-  const updateToken = (tokenId: string, updates: Partial<TokenData>) => {
+  const updateToken = async (tokenId: string, updates: Partial<TokenData>) => {
     const index = gameTokens.value.findIndex((token) => token.id === tokenId);
     if (index !== -1) {
       gameTokens.value[index] = {
@@ -236,6 +242,19 @@ export const useTokenStore = defineStore("tokens", () => {
         ...updates,
         updatedAt: new Date().toISOString(),
       };
+      
+      // 同步到 Supabase（过滤 undefined 值）
+      try {
+        const supabaseUpdates = Object.fromEntries(
+          Object.entries(updates).filter(([_, v]) => v !== undefined)
+        );
+        if (Object.keys(supabaseUpdates).length > 0) {
+          await tokenApi.update(tokenId, supabaseUpdates);
+        }
+      } catch (err) {
+        console.warn('Supabase 同步失败:', err);
+      }
+      
       return true;
     }
     return false;
