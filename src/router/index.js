@@ -167,6 +167,13 @@ router.beforeEach((to, from, next) => {
     next('/admin/dashboard');
     return;
   }
+  
+  // 等待初始化完成
+  if (!tokenStore.isInitialized) {
+    next()
+    return
+  }
+  
   // 检查是否需要Token
   // if (to.meta.requiresToken  && tokenStore.getWebSocketStatus(tokenStore.selectedToken.id)=="disconnected") {
     if (to.meta.requiresToken  && !tokenStore.hasTokens) {
