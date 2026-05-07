@@ -1,181 +1,188 @@
 <template>
-  <div class="default-layout">
-    <!-- 顶部导航 -->
-    <nav class="dashboard-nav">
-      <div class="nav-container">
-        <div class="nav-brand">
-          <img src="/icons/xiaoyugan.png" alt="XYZW" class="brand-logo" />
-          <div class="brand-toggle" @click="isMobileMenuOpen = true">
-            <n-icon>
-              <Menu />
-            </n-icon>
-            <span class="brand-text">XYZW 控制台</span>
+  <div class="flex h-screen bg-gray-100 overflow-hidden">
+    <!-- Sidebar - 桌面端 -->
+    <aside
+      class="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:w-64 bg-gray-900"
+    >
+      <!-- Logo -->
+      <div class="flex items-center gap-3 px-6 h-16 border-b border-gray-800">
+        <img
+          src="/icons/xiaoyugan.png"
+          alt="XYZW"
+          class="w-9 h-9 rounded-lg"
+        />
+        <span class="text-white text-lg font-bold tracking-tight">
+          XY 控制台
+        </span>
+      </div>
+
+      <!-- Nav Items -->
+      <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <router-link
+          v-for="item in navItems"
+          :key="item.path"
+          :to="item.path"
+          v-show="!item.hidden"
+          class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150"
+          :class="
+            isActive(item.path)
+              ? 'bg-indigo-600 text-white'
+              : 'text-gray-400 hover:text-white hover:bg-white/10'
+          "
+        >
+          <n-icon :size="20">
+            <component :is="item.icon" />
+          </n-icon>
+          <span>{{ item.label }}</span>
+        </router-link>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="px-4 py-3 border-t border-gray-800">
+        <div class="flex items-center gap-3 px-2">
+          <n-avatar
+            :src="selectedToken?.avatar || '/icons/xiaoyugan.png'"
+            size="small"
+            fallback-src="/icons/xiaoyugan.png"
+            round
+          />
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-300 truncate">
+              {{ selectedToken?.name || "未选择Token" }}
+            </p>
+            <p class="text-xs text-gray-500 truncate">在线</p>
           </div>
-        </div>
-
-        <div class="nav-menu">
-          <router-link
-            to="/admin/dashboard"
-            class="nav-item"
-            active-class="active"
+          <n-dropdown
+            :options="userMenuOptions"
+            @select="handleUserAction"
+            trigger="click"
           >
-            <n-icon>
-              <Home />
-            </n-icon>
-            <span>首页</span>
-          </router-link>
-          <router-link
-            to="/admin/game-features"
-            class="nav-item"
-            active-class="active"
-          >
-            <n-icon>
-              <Cube />
-            </n-icon>
-            <span>游戏功能</span>
-          </router-link>
-          <router-link to="/tokens" class="nav-item" active-class="active">
-            <n-icon>
-              <PersonCircle />
-            </n-icon>
-            <span>Token管理</span>
-          </router-link>
-          <router-link
-            to="/admin/batch-daily-tasks"
-            class="nav-item"
-            active-class="active"
-          >
-            <n-icon>
-              <Layers />
-            </n-icon>
-            <span>批量日常</span>
-          </router-link>
-          <router-link
-            to="/admin/message-test"
-            class="nav-item"
-            active-class="active"
-          >
-            <n-icon>
-              <ChatbubbleEllipsesSharp />
-            </n-icon>
-            <span>消息测试</span>
-          </router-link>
-          <router-link to="/admin/legion-war" class="nav-item" active-class="active"  v-if="isNowInLegionWarTime()" >
-            <n-icon>
-              <LockOpen />
-            </n-icon>
-            <span>实时盐场</span>
-          </router-link>
-        </div>
-
-        <div class="nav-user">
-          <!-- 主题切换按钮 -->
-          <ThemeToggle />
-
-          <n-dropdown :options="userMenuOptions" @select="handleUserAction">
-            <div class="user-info">
-              <n-avatar
-                :src="selectedToken?.avatar || '/icons/xiaoyugan.png'"
-                size="medium"
-                fallback-src="/icons/xiaoyugan.png"
-              />
-              <span class="username">{{
-                selectedToken?.name || "未选择Token"
-              }}</span>
-              <n-icon>
-                <ChevronDown />
+            <button
+              class="text-gray-500 hover:text-white transition-colors p-1 rounded"
+            >
+              <n-icon :size="16">
+                <EllipsisVertical />
               </n-icon>
-            </div>
+            </button>
           </n-dropdown>
         </div>
       </div>
-    </nav>
+    </aside>
+
+    <!-- Mobile Sidebar Drawer -->
     <n-drawer
       v-model:show="isMobileMenuOpen"
       placement="left"
-      style="width: 260px"
+      :width="256"
+      :trap-focus="true"
+      :block-scroll="true"
     >
-      <div class="drawer-menu">
-        <router-link
-          to="/admin/dashboard"
-          class="drawer-item"
-          @click="isMobileMenuOpen = false"
-        >
-          <n-icon>
-            <Home />
-          </n-icon>
-          <span>首页</span>
-        </router-link>
-        <router-link
-          to="/admin/game-features"
-          class="drawer-item"
-          @click="isMobileMenuOpen = false"
-        >
-          <n-icon>
-            <Cube />
-          </n-icon>
-          <span>游戏功能</span>
-        </router-link>
-        <router-link
-          to="/tokens"
-          class="drawer-item"
-          @click="isMobileMenuOpen = false"
-        >
-          <n-icon>
-            <PersonCircle />
-          </n-icon>
-          <span>Token管理</span>
-        </router-link>
-        <router-link
-          to="/admin/daily-tasks"
-          class="drawer-item"
-          @click="isMobileMenuOpen = false"
-        >
-          <n-icon>
-            <Settings />
-          </n-icon>
-          <span>任务管理</span>
-        </router-link>
-        <router-link
-          to="/admin/batch-daily-tasks"
-          class="drawer-item"
-          @click="isMobileMenuOpen = false"
-        >
-          <n-icon>
-            <Layers />
-          </n-icon>
-          <span>批量日常</span>
-        </router-link>
-        <router-link
-          to="/admin/message-test"
-          class="drawer-item"
-          @click="isMobileMenuOpen = false"
-        >
-          <n-icon>
-            <ChatbubbleEllipsesSharp />
-          </n-icon>
-          <span>消息测试</span>
-        </router-link>
-          <router-link to="/admin/legion-war" class="nav-item" active-class="active"  v-if="isNowInLegionWarTime()" >
-            <n-icon>
-              <LockOpen />
+      <n-drawer-content
+        :body-content-style="{ padding: 0, background: '#111827' }"
+        :header-style="{ display: 'none' }"
+        :native-scrollbar="false"
+        content-class="sidebar-drawer-content"
+      >
+        <!-- Logo -->
+        <div class="flex items-center gap-3 px-6 h-16 border-b border-gray-800">
+          <img
+            src="/icons/xiaoyugan.png"
+            alt="XYZW"
+            class="w-9 h-9 rounded-lg"
+          />
+          <span class="text-white text-lg font-bold tracking-tight">
+            XY 控制台
+          </span>
+        </div>
+
+        <!-- Nav Items -->
+        <nav class="px-3 py-4 space-y-1">
+          <router-link
+            v-for="item in navItems"
+            :key="item.path"
+            :to="item.path"
+            v-show="!item.hidden"
+            @click="isMobileMenuOpen = false"
+            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150"
+            :class="
+              isActive(item.path)
+                ? 'bg-indigo-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-white/10'
+            "
+          >
+            <n-icon :size="20">
+              <component :is="item.icon" />
             </n-icon>
-            <span>实时盐场</span>
+            <span>{{ item.label }}</span>
           </router-link>
-        <router-link
-          to="/admin/profile"
-          class="drawer-item"
-          @click="isMobileMenuOpen = false"
-        >
-          <n-icon>
-            <Settings />
-          </n-icon>
-          <span>个人设置</span>
-        </router-link>
-      </div>
+        </nav>
+
+        <!-- Footer -->
+        <div class="mt-auto px-4 py-3 border-t border-gray-800">
+          <div class="flex items-center gap-3 px-2">
+            <n-avatar
+              :src="selectedToken?.avatar || '/icons/xiaoyugan.png'"
+              size="small"
+              fallback-src="/icons/xiaoyugan.png"
+              round
+            />
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-gray-300 truncate">
+                {{ selectedToken?.name || "未选择Token" }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </n-drawer-content>
     </n-drawer>
-    <div class="main">
-      <router-view />
+
+    <!-- Main Area -->
+    <div class="flex-1 lg:pl-64 flex flex-col min-w-0">
+      <!-- Header -->
+      <header
+        class="sticky top-0 z-30 bg-white border-b-2 border-indigo-600 h-16 flex items-center justify-between px-4 lg:px-6 shrink-0"
+      >
+        <div class="flex items-center gap-3">
+          <!-- Mobile hamburger -->
+          <button
+            class="lg:hidden text-gray-600 hover:text-gray-900 p-1 -ml-1 rounded-md hover:bg-gray-100"
+            @click="isMobileMenuOpen = true"
+          >
+            <n-icon :size="24">
+              <Menu />
+            </n-icon>
+          </button>
+          <!-- Page title -->
+          <h1 class="text-lg font-semibold text-gray-900">
+            {{ currentPageTitle }}
+          </h1>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Mobile avatar -->
+          <div class="lg:hidden flex items-center gap-2">
+            <n-dropdown
+              :options="userMenuOptions"
+              @select="handleUserAction"
+              trigger="click"
+            >
+              <div class="flex items-center gap-1.5 cursor-pointer p-1 rounded-md hover:bg-gray-100">
+                <n-avatar
+                  :src="selectedToken?.avatar || '/icons/xiaoyugan.png'"
+                  size="small"
+                  fallback-src="/icons/xiaoyugan.png"
+                  round
+                />
+              </div>
+            </n-dropdown>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <main class="flex-1 overflow-y-auto p-4 lg:p-6">
+        <router-view />
+      </main>
     </div>
   </div>
 </template>
@@ -186,29 +193,76 @@ import {
   selectedToken,
   selectedTokenId,
 } from "@/stores/tokenStore";
-import ThemeToggle from "@/components/Common/ThemeToggle.vue";
 import {
   Home,
   PersonCircle,
   Cube,
-  Settings,
-  ChevronDown,
-  ChatbubbleEllipsesSharp,
-  LockClosedSharp,LockOpen,
-  Menu,
   Layers,
+  ChatbubbleEllipsesSharp,
+  LockOpen,
+  Menu,
+  EllipsisVertical,
 } from "@vicons/ionicons5";
-
-import { useRouter } from 'vue-router'
-import { useMessage } from 'naive-ui'
-import { ref } from 'vue'
-import { isNowInLegionWarTime } from '@/utils/clubBattleUtils'
+import { useRouter, useRoute } from "vue-router";
+import { useMessage } from "naive-ui";
+import { ref, computed, markRaw, h } from "vue";
+import { NIcon } from "naive-ui";
+import { isNowInLegionWarTime } from "@/utils/clubBattleUtils";
 
 const tokenStore = useTokenStore();
 const router = useRouter();
+const route = useRoute();
 const message = useMessage();
 
 const isMobileMenuOpen = ref(false);
+
+// Navigation items
+const navItems = computed(() => [
+  {
+    label: "首页",
+    path: "/admin/dashboard",
+    icon: markRaw(Home),
+  },
+  {
+    label: "批量日常",
+    path: "/admin/batch-daily-tasks",
+    icon: markRaw(Layers),
+  },
+  {
+    label: "游戏功能",
+    path: "/admin/game-features",
+    icon: markRaw(Cube),
+  },
+  {
+    label: "消息测试",
+    path: "/admin/message-test",
+    icon: markRaw(ChatbubbleEllipsesSharp),
+  },
+  {
+    label: "Token管理",
+    path: "/tokens",
+    icon: markRaw(PersonCircle),
+  },
+  {
+    label: "实时盐场",
+    path: "/admin/legion-war",
+    icon: markRaw(LockOpen),
+    hidden: !isNowInLegionWarTime(),
+  },
+]);
+
+// Page title from route
+const currentPageTitle = computed(() => {
+  const item = navItems.value.find(
+    (item) => item.path === route.path || route.path.startsWith(item.path + "/"),
+  );
+  return item?.label || "XY 控制台";
+});
+
+// Check active nav item
+const isActive = (path) => {
+  return route.path === path || route.path.startsWith(path + "/");
+};
 
 const userMenuOptions = [
   {
@@ -217,7 +271,6 @@ const userMenuOptions = [
   },
 ];
 
-// 方法
 const handleUserAction = async (key) => {
   switch (key) {
     case "logout":
@@ -229,163 +282,13 @@ const handleUserAction = async (key) => {
 };
 </script>
 
-<style scoped lang="scss">
-// 导航栏
-.dashboard-nav {
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-light);
-  padding: 0 var(--spacing-lg);
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
-}
-
-.nav-container {
-  display: flex;
-  align-items: center;
-  height: 64px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  margin-right: var(--spacing-xl);
-}
-
-.brand-logo {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--border-radius-small);
-}
-
-.brand-text {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
-}
-
-.brand-toggle {
-  display: none;
-  align-items: center;
-  gap: var(--spacing-xs);
-  cursor: pointer;
-  font-size: var(--font-size-lg);
-}
-
-.brand-toggle .n-icon {
-  font-size: inherit;
-}
-
-.nav-menu {
-  display: flex;
-  gap: var(--spacing-md);
-  flex: 1;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-medium);
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: all var(--transition-fast);
-
-  &:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
-
-  &.active {
-    background: var(--primary-color-light);
-    color: var(--primary-color);
-  }
-}
-
-.nav-user {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  border-radius: var(--border-radius-medium);
-  cursor: pointer;
-  transition: background var(--transition-fast);
-
-  &:hover {
-    background: var(--bg-tertiary);
-  }
-}
-
-.username {
-  font-weight: var(--font-weight-medium);
-  color: var(--text-primary);
-}
-
-@media (max-width: 768px) {
-  .nav-item span {
-    display: none;
-  }
-
-  .nav-menu {
-    display: none;
-  }
-
-  .nav-item {
-    padding: var(--spacing-sm);
-    flex: 0 0 auto;
-  }
-
-  .nav-container {
-    height: 56px;
-  }
-
-  .brand-logo {
-    display: none;
-  }
-
-  .brand-toggle {
-    display: inline-flex;
-  }
-}
-
-.drawer-menu {
+<style scoped>
+/* Override drawer content background */
+:deep(.sidebar-drawer-content .n-drawer-body) {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-}
-
-.drawer-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-medium);
-  color: var(--text-secondary);
-  text-decoration: none;
-}
-
-.drawer-item.router-link-active {
-  background: var(--primary-color-light);
-  color: var(--primary-color);
-}
-
-/* 禁用样式：灰化、鼠标禁止、无hover效果 */
-.nav-item.disabled {
-  background: #cccccc;
-  color: #999999;
-  cursor: not-allowed; /* 鼠标样式：禁止 */
-  pointer-events: none; /* 可选：直接禁用所有鼠标事件（比阻止click更彻底） */
+  min-height: 100%;
+  background: #111827;
+  padding: 0;
 }
 </style>

@@ -1,44 +1,49 @@
-// 颜色变量
+// 颜色变量 - Tailwind Dashboard 风格 (Indigo + Gray 体系)
 :root {
-  // 主题色 - Win11 浅蓝色系
-  --primary-color: #3b82f6;
-  --primary-color-hover: #2563eb;
-  --primary-color-light: #dbeafe;
+  // 主题色 - Indigo 体系
+  --primary-color: #4F46E5;
+  --primary-color-hover: #4338CA;
+  --primary-color-light: #EEF2FF;
+  --primary-color-dark: #3730A3;
 
   // 辅助色
-  --secondary-color: #0ea5e9;
-  --success-color: #18a058;
-  --warning-color: #f5a623;
-  --error-color: #d03050;
-  --info-color: #2080f0;
+  --secondary-color: #6366F1;
+  --success-color: #10B981;
+  --warning-color: #F59E0B;
+  --error-color: #EF4444;
+  --info-color: #3B82F6;
 
   // 中性色
-  --text-primary: #333333;
-  --text-secondary: #666666;
-  --text-tertiary: #999999;
-  --text-disabled: #cccccc;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-tertiary: #9CA3AF;
+  --text-disabled: #D1D5DB;
 
   // 背景色
-  --bg-primary: #ffffff;
-  --bg-secondary: #f5f7fa;
-  --bg-tertiary: #f0f2f5;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F9FAFB;
+  --bg-tertiary: #F3F4F6;
+  --bg-page: #F3F4F6;
   --bg-overlay: rgba(0, 0, 0, 0.5);
 
   // 边框色
-  --border-light: #e5e7eb;
-  --border-medium: #d1d5db;
-  --border-dark: #9ca3af;
+  --border-light: #E5E7EB;
+  --border-medium: #D1D5DB;
+  --border-dark: #9CA3AF;
+  --border-card: #E5E7EB;
 
   // 阴影
-  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-heavy: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-light: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-heavy: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 
   // 圆角
-  --border-radius-small: 4px;
+  --border-radius-small: 6px;
   --border-radius-medium: 8px;
   --border-radius-large: 12px;
   --border-radius-xl: 16px;
+  --border-radius-full: 9999px;
 
   // 间距
   --spacing-xs: 4px;
@@ -50,12 +55,13 @@
 
   // 字体
   --font-size-xs: 12px;
-  --font-size-sm: 14px;
-  --font-size-md: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 32px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 32px;
 
   --font-weight-light: 300;
   --font-weight-normal: 400;
@@ -64,14 +70,14 @@
   --font-weight-bold: 700;
 
   // 行高
-  --line-height-tight: 1.2;
+  --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
 
   // 动画
   --transition-fast: 0.15s ease;
-  --transition-normal: 0.3s ease;
-  --transition-slow: 0.5s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
 
   // Z-index
   --z-dropdown: 1000;
@@ -82,23 +88,18 @@
   --z-popover: 1060;
   --z-tooltip: 1070;
   --z-toast: 1080;
-}
 
-// 暗色主题
-[data-theme="dark"] {
-  --text-primary: #ffffff;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
-  --text-disabled: #6b7280;
+  // 布局专用
+  --sidebar-bg: #111827;
+  --sidebar-width: 256px;
+  --sidebar-text: #9CA3AF;
+  --sidebar-text-active: #FFFFFF;
+  --sidebar-item-hover: rgba(255, 255, 255, 0.1);
+  --sidebar-item-active: #4F46E5;
 
-  --bg-primary: #1f2937;
-  --bg-secondary: #374151;
-  --bg-tertiary: #4b5563;
-  --bg-overlay: rgba(0, 0, 0, 0.7);
-
-  --border-light: #4b5563;
-  --border-medium: #6b7280;
-  --border-dark: #9ca3af;
+  --header-height: 64px;
+  --header-bg: #FFFFFF;
+  --header-border: #E5E7EB;
 }
 
 @media (max-width: 768px) {

@@ -1,47 +1,92 @@
 <template>
   <div class="dashboard-page">
     <!-- 系统状态卡片 -->
-    <n-grid :cols="3" :x-gap="16" :y-gap="16" class="status-grid">
+    <n-grid :cols="4" :x-gap="20" :y-gap="20" class="status-grid">
       <n-gi>
-        <n-card>
-          <n-statistic label="后端状态">
-            <template #icon>
-              <n-icon :color="backendOnline ? '#18a058' : '#d03050'">
+        <n-card class="status-card" :bordered="false">
+          <div class="status-item">
+            <div :class="['status-icon-wrapper', backendOnline ? 'success' : 'error']">
+              <n-icon :color="backendOnline ? '#10b981' : '#ef4444'" size="24">
                 <CheckmarkCircle v-if="backendOnline" />
                 <CloseCircle v-else />
               </n-icon>
-            </template>
-            <span :style="{ color: backendOnline ? '#18a058' : '#d03050' }">
+            </div>
+            <span class="status-label">Render 后端</span>
+            <div class="status-value" :style="{ color: backendOnline ? '#10b981' : '#ef4444' }">
               {{ backendOnline ? '已连接' : '离线' }}
-            </span>
-          </n-statistic>
+            </div>
+            <div class="status-meta" v-if="healthData">{{ healthData.activeCrons || 0 }} 个活跃 Cron</div>
+          </div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card>
-          <n-statistic label="活跃任务" :value="tasks.length" />
+        <n-card class="status-card" :bordered="false">
+          <div class="status-item">
+            <div :class="['status-icon-wrapper', supabaseOnline ? 'success' : 'error']">
+              <n-icon :color="supabaseOnline ? '#10b981' : '#ef4444'" size="24">
+                <CheckmarkCircle v-if="supabaseOnline" />
+                <CloseCircle v-else />
+              </n-icon>
+            </div>
+            <span class="status-label">Supabase 数据库</span>
+            <div class="status-value" :style="{ color: supabaseOnline ? '#10b981' : '#ef4444' }">
+              {{ supabaseOnline ? '已连接' : '离线' }}
+            </div>
+            <div class="status-meta">{{ totalTokens }} 个 Token</div>
+          </div>
         </n-card>
       </n-gi>
       <n-gi>
-        <n-card>
-          <n-statistic label="执行日志" :value="logs.length">
-            <template #suffix>
-              <n-text depth="3" style="font-size:12px">条</n-text>
-            </template>
-          </n-statistic>
+        <n-card class="status-card" :bordered="false">
+          <div class="status-item">
+            <div class="status-icon-wrapper warning">
+            <n-icon color="#f59e0b" size="24">
+              <AlertCircleOutline />
+            </n-icon>
+          </div>
+          <span class="status-label">定时任务</span>
+            <div class="status-value">{{ tasks.filter(t => t.enabled).length }}<span style="font-size:16px;color:#94a3b8"> / {{ tasks.length }}</span></div>
+            <div class="status-meta">启用 / 总计</div>
+          </div>
+        </n-card>
+      </n-gi>
+      <n-gi>
+        <n-card class="status-card" :bordered="false">
+          <div class="status-item">
+            <div class="status-icon-wrapper info">
+            <n-icon color="#3b82f6" size="24">
+              <Cube />
+            </n-icon>
+          </div>
+          <span class="status-label">执行日志</span>
+            <div class="status-value">{{ logs.length }}</div>
+            <div class="status-meta">
+              <span style="color:#10b981">{{ logs.filter(l => l.status === 'success').length }}</span>
+              <span style="color:#94a3b8"> / </span>
+              <span style="color:#ef4444">{{ logs.filter(l => l.status === 'error').length }}</span>
+            </div>
+          </div>
         </n-card>
       </n-gi>
     </n-grid>
+    <div class="status-footer">
+      <n-space size="small" align="center">
+        <span class="status-footer-text">上次刷新: {{ lastCheckTime }}</span>
+        <n-button size="tiny" quaternary @click="refreshAll" :loading="refreshing">刷新</n-button>
+        <n-switch v-model:value="autoRefresh" size="small">
+          <template #checked>自动刷新 30s</template>
+          <template #unchecked>自动刷新</template>
+        </n-switch>
+      </n-space>
+    </div>
 
     <!-- 定时任务列表 -->
     <n-card title="定时任务列表" class="section-card">
       <template #header-extra>
         <n-space>
-          <n-button type="info" size="small" @click="openTemplateManagerModal">任务模板</n-button>
-          <n-button size="small" @click="openBatchSettings" :icon="() => h(NIcon, null, { default: () => h(Settings) })">
-            任务设置
-          </n-button>
-          <n-button type="primary" @click="openTaskModal">新增定时任务</n-button>
+          <n-button @click="openTemplateManagerModal" class="dashboard-action-btn">任务模板</n-button>
+          <n-button @click="openBatchSettings" :icon="() => h(NIcon, null, { default: () => h(Settings) })" class="dashboard-action-btn">任务设置</n-button>
+          <n-button @click="openTaskModal" class="dashboard-action-btn">新增定时任务</n-button>
         </n-space>
       </template>
       <n-data-table
@@ -55,11 +100,75 @@
     </n-card>
 
     <!-- 执行日志 -->
-    <n-card title="执行日志" class="section-card">
+    <n-card title="执行日志" class="section-card tech-card">
       <template #header-extra>
-        <n-button size="small" @click="fetchLogs">刷新</n-button>
+        <n-space>
+          <n-button-group size="small">
+            <n-button :type="logViewTab === 'summary' ? 'primary' : 'default'" @click="logViewTab = 'summary'">聚合视图</n-button>
+            <n-button :type="logViewTab === 'detail' ? 'primary' : 'default'" @click="logViewTab = 'detail'">详细日志</n-button>
+          </n-button-group>
+          <n-button size="small" @click="fetchLogs">刷新</n-button>
+          <n-button size="small" type="warning" @click="clearLogs">清除日志</n-button>
+        </n-space>
       </template>
+
+      <!-- 聚合视图 -->
+      <div v-if="logViewTab === 'summary'">
+        <div v-if="!logSummary.length && !logsLoading" style="text-align:center;padding:40px 0;color:#888">
+          暂无执行日志
+        </div>
+        <n-collapse v-else>
+          <n-collapse-item
+            v-for="item in logSummary"
+            :key="item.taskId"
+            :title="`${item.taskName}（${item.tokenCount} 个账号 · ${formatBeijingTime(item.lastRun)}）`"
+          >
+            <template #header-extra>
+              <n-space align="center" :size="8">
+                <n-tag type="success" size="small">{{ item.totalSuccess }} 成功</n-tag>
+                <n-tag v-if="item.totalFail > 0" type="error" size="small">{{ item.totalFail }} 失败</n-tag>
+                <n-tag v-else type="success" size="small">全部成功</n-tag>
+              </n-space>
+            </template>
+
+            <div style="padding:4px 0 8px">
+              <!-- 任务维度统计 -->
+              <div v-for="(task, idx) in item.tasks" :key="idx" style="margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                  <span style="font-weight:600;font-size:13px">{{ idx + 1 }}. {{ task.taskName }}</span>
+                  <n-tag type="success" size="tiny">{{ task.success }} 成功</n-tag>
+                  <n-tag v-if="task.fail > 0" type="error" size="tiny">{{ task.fail }} 失败</n-tag>
+                </div>
+
+                <!-- 失败账号详情 -->
+                <div v-if="task.fail > 0" style="margin-left:20px;font-size:12px;color:#d03050">
+                  <div v-for="(f, fi) in task.failures" :key="fi" style="margin-bottom:4px">
+                    <span style="color:#e08030;font-weight:500">{{ f.tokenName }}</span>
+                    <span v-for="(part, pi) in parseFailureReasons(f.reason)" :key="pi" style="margin-left:6px;display:inline">
+                      <n-tag size="tiny" :bordered="false" type="warning" style="font-size:11px;opacity:0.7">{{ part.cmd }}</n-tag>
+                      <span style="color:#d03050">{{ part.reason }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 失败原因统计 -->
+              <div v-if="item.failReasons.length > 0" style="margin-top:12px;padding-top:12px;border-top:1px solid #efeff5">
+                <div style="font-weight:600;font-size:12px;color:#666;margin-bottom:6px">失败原因统计</div>
+                <div v-for="(fr, fri) in item.failReasons" :key="fri" style="margin-bottom:4px;font-size:12px">
+                  <n-tag type="error" size="tiny" style="margin-right:8px">{{ fr.count }}次</n-tag>
+                  <span>{{ fr.reason }}</span>
+                  <span style="color:#999;margin-left:8px">({{ fr.tokens.join(', ') }})</span>
+                </div>
+              </div>
+            </div>
+          </n-collapse-item>
+        </n-collapse>
+      </div>
+
+      <!-- 详细日志 -->
       <n-data-table
+        v-if="logViewTab === 'detail'"
         :columns="logColumns"
         :data="logs"
         :loading="logsLoading"
@@ -74,116 +183,122 @@
       v-model:show="showTaskModal"
       preset="card"
       :title="editingTaskId ? '编辑定时任务' : '新增定时任务'"
-      style="width: 90%; max-width: 640px"
+      style="width: 90%; max-width: 960px"
     >
-      <div class="settings-content">
-        <!-- 基本信息 -->
-        <div class="settings-group">
-          <div class="group-title">基本信息</div>
-          <div class="setting-item">
-            <label class="setting-label">任务名称</label>
-            <n-input v-model:value="taskForm.name" placeholder="请输入任务名称" style="flex:1" />
-          </div>
-          <div class="setting-item" style="display:flex;flex-direction:column;align-items:stretch">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <label class="setting-label">运行类型</label>
-              <n-radio-group v-model:value="taskForm.runType" @update:value="resetRunType">
-                <n-radio value="daily">每天固定时间</n-radio>
-                <n-radio value="cron">Cron表达式</n-radio>
-              </n-radio-group>
+      <div class="settings-content" style="display:flex;gap:24px;align-items:flex-start">
+        <!-- 左侧：基本信息和选择任务 -->
+        <div style="flex:1;min-width:0">
+          <!-- 基本信息 -->
+          <div class="settings-group">
+            <div class="group-title">基本信息</div>
+            <div class="setting-item">
+              <label class="setting-label">任务名称</label>
+              <n-input v-model:value="taskForm.name" placeholder="请输入任务名称" style="flex:1" />
             </div>
-            <div style="display:flex;justify-content:flex-end;margin-top:8px">
-              <n-time-picker v-if="taskForm.runType === 'daily'" v-model:value="taskForm.runTime" format="HH:mm" />
-              <n-input v-if="taskForm.runType === 'cron'" v-model:value="taskForm.cronExpression" placeholder="分 时 日 月 周（例：30 2 * * *）" style="max-width:300px" @input="parseCronExpression" />
+            <div class="setting-item" style="display:flex;flex-direction:column;align-items:stretch">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <label class="setting-label">运行类型</label>
+                <n-radio-group v-model:value="taskForm.runType" @update:value="resetRunType">
+                  <n-radio value="daily">每天固定时间</n-radio>
+                  <n-radio value="cron">Cron表达式</n-radio>
+                </n-radio-group>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                <n-time-picker v-if="taskForm.runType === 'daily'" v-model:value="taskForm.runTime" format="HH:mm" />
+                <n-input v-if="taskForm.runType === 'cron'" v-model:value="taskForm.cronExpression" placeholder="分 时 日 月 周（例：30 2 * * *）" style="max-width:300px" @input="parseCronExpression" />
+              </div>
+              <div class="cron-parser" v-if="taskForm.runType === 'cron' && taskForm.cronExpression" style="margin-top:12px">
+                <div v-if="cronValidation.valid" class="cron-validation success">
+                  <n-text type="success">✓ {{ cronValidation.message }}</n-text>
+                </div>
+                <div v-else class="cron-validation error">
+                  <n-text type="error">✗ {{ cronValidation.message }}</n-text>
+                </div>
+                <div v-if="cronValidation.valid && cronNextRuns.length > 0" class="cron-next-runs">
+                  <h4>未来5次执行时间：</h4>
+                  <ul>
+                    <li v-for="(run, index) in cronNextRuns" :key="index">{{ run }}</li>
+                  </ul>
+                </div>
+              </div>
             </div>
-            <div class="cron-parser" v-if="taskForm.runType === 'cron' && taskForm.cronExpression" style="margin-top:12px">
-              <div v-if="cronValidation.valid" class="cron-validation success">
-                <n-text type="success">✓ {{ cronValidation.message }}</n-text>
-              </div>
-              <div v-else class="cron-validation error">
-                <n-text type="error">✗ {{ cronValidation.message }}</n-text>
-              </div>
-              <div v-if="cronValidation.valid && cronNextRuns.length > 0" class="cron-next-runs">
-                <h4>未来5次执行时间：</h4>
-                <ul>
-                  <li v-for="(run, index) in cronNextRuns" :key="index">{{ run }}</li>
-                </ul>
-              </div>
+            <div class="setting-item">
+              <label class="setting-label">任务模板</label>
+              <n-select
+                v-model:value="taskForm.templateId"
+                :options="taskTemplateOptions"
+                placeholder="选择任务模板（可选）"
+                clearable
+                style="flex:1"
+              />
             </div>
+            <div class="setting-item-tip">模板包含阵容、开关等配置，执行时将应用模板设置</div>
           </div>
-          <div class="setting-item">
-            <label class="setting-label">任务模板</label>
-            <n-select
-              v-model:value="taskForm.templateId"
-              :options="taskTemplateOptions"
-              placeholder="选择任务模板（可选）"
-              clearable
-              style="flex:1"
-            />
+
+          <!-- 选择任务 -->
+          <div class="settings-group settings-group--bordered">
+            <div class="group-title">
+              <span>选择任务</span>
+              <n-space size="small">
+                <n-button size="small" @click="selectAllTasks">全选</n-button>
+                <n-button size="small" @click="deselectAllTasks">全不选</n-button>
+              </n-space>
+            </div>
+            <n-checkbox-group v-model:value="taskForm.selectedTasks">
+              <n-tabs type="line" animated size="small" pane-style="padding-top:12px" default-value="daily">
+                <n-tab-pane
+                  v-for="group in taskGroupDefinitions"
+                  :key="group.name"
+                  :name="group.name"
+                  :tab="group.label"
+                >
+                  <n-grid :cols="2" :x-gap="12" :y-gap="8">
+                    <n-grid-item v-for="task in groupedAvailableTasks[group.name]" :key="task.value">
+                      <n-checkbox :value="task.value">{{ task.label }}</n-checkbox>
+                    </n-grid-item>
+                  </n-grid>
+                </n-tab-pane>
+                <n-tab-pane
+                  v-if="groupedAvailableTasks['other'] && groupedAvailableTasks['other'].length > 0"
+                  name="other"
+                  tab="其他"
+                >
+                  <n-grid :cols="2" :x-gap="12" :y-gap="8">
+                    <n-grid-item v-for="task in groupedAvailableTasks['other']" :key="task.value">
+                      <n-checkbox :value="task.value">{{ task.label }}</n-checkbox>
+                    </n-grid-item>
+                  </n-grid>
+                </n-tab-pane>
+              </n-tabs>
+            </n-checkbox-group>
           </div>
-          <div class="setting-item-tip">模板包含阵容、开关等配置，执行时将应用模板设置</div>
         </div>
 
-        <!-- 选择账号 -->
-        <div class="settings-group settings-group--bordered">
-          <div class="group-title">
-            <span>选择账号</span>
-            <n-space size="small">
-              <n-button size="small" @click="selectAllTokens">全选</n-button>
-              <n-button size="small" @click="deselectAllTokens">全不选</n-button>
-            </n-space>
+        <!-- 右侧：选择账号 -->
+        <div style="flex:1;min-width:0">
+          <div class="settings-group settings-group--bordered" style="height:100%;max-height:500px;display:flex;flex-direction:column">
+            <div class="group-title">
+              <span>选择账号</span>
+              <n-space size="small">
+                <n-button size="small" @click="selectAllTokens">全选</n-button>
+                <n-button size="small" @click="deselectAllTokens">全不选</n-button>
+              </n-space>
+            </div>
+            <div style="flex:1;overflow-y:auto">
+              <n-checkbox-group v-model:value="taskForm.selectedTokens">
+                <div :style="`column-count:${batchSettings.tokenListColumns};column-gap:8px;`">
+                  <div v-for="token in sortedTokens" :key="token.id" style="break-inside:avoid;margin-bottom:8px;">
+                    <n-checkbox :value="token.id">{{ token.name }}</n-checkbox>
+                  </div>
+                </div>
+              </n-checkbox-group>
+            </div>
           </div>
-          <n-checkbox-group v-model:value="taskForm.selectedTokens">
-            <n-grid :cols="batchSettings.tokenListColumns" :x-gap="12" :y-gap="8">
-              <n-grid-item v-for="token in sortedTokens" :key="token.id">
-                <n-checkbox :value="token.id">{{ token.name }}</n-checkbox>
-              </n-grid-item>
-            </n-grid>
-          </n-checkbox-group>
         </div>
-
-        <!-- 选择任务 -->
-        <div class="settings-group settings-group--bordered">
-          <div class="group-title">
-            <span>选择任务</span>
-            <n-space size="small">
-              <n-button size="small" @click="selectAllTasks">全选</n-button>
-              <n-button size="small" @click="deselectAllTasks">全不选</n-button>
-            </n-space>
-          </div>
-          <n-checkbox-group v-model:value="taskForm.selectedTasks">
-            <n-tabs type="line" animated size="small" pane-style="padding-top:12px" default-value="daily">
-              <n-tab-pane
-                v-for="group in taskGroupDefinitions"
-                :key="group.name"
-                :name="group.name"
-                :tab="group.label"
-              >
-                <n-grid :cols="2" :x-gap="12" :y-gap="8">
-                  <n-grid-item v-for="task in groupedAvailableTasks[group.name]" :key="task.value">
-                    <n-checkbox :value="task.value">{{ task.label }}</n-checkbox>
-                  </n-grid-item>
-                </n-grid>
-              </n-tab-pane>
-              <n-tab-pane
-                v-if="groupedAvailableTasks['other'] && groupedAvailableTasks['other'].length > 0"
-                name="other"
-                tab="其他"
-              >
-                <n-grid :cols="2" :x-gap="12" :y-gap="8">
-                  <n-grid-item v-for="task in groupedAvailableTasks['other']" :key="task.value">
-                    <n-checkbox :value="task.value">{{ task.label }}</n-checkbox>
-                  </n-grid-item>
-                </n-grid>
-              </n-tab-pane>
-            </n-tabs>
-          </n-checkbox-group>
-        </div>
-
-        <div class="modal-actions">
-          <n-button @click="showTaskModal = false">取消</n-button>
-          <n-button type="primary" @click="saveTask" style="margin-left:12px">保存</n-button>
-        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:20px;text-align:right">
+        <n-button @click="showTaskModal = false">取消</n-button>
+        <n-button type="primary" @click="saveTask" style="margin-left:12px">保存</n-button>
       </div>
     </n-modal>
 
@@ -435,6 +550,10 @@
                 <label class="setting-label">按积分开箱目标</label>
                 <n-input-number v-model:value="batchSettings.targetBoxPoints" :min="1" :max="1000000" :step="100" size="small" style="width:100px" />
               </div>
+              <div class="setting-item" style="flex-direction:row;justify-content:space-between;align-items:center">
+                <label class="setting-label">梦境商品购买配置</label>
+                <n-button size="small" @click="openDreamBuyModal">点击配置</n-button>
+              </div>
             </div>
             <n-divider title-placement="left" style="margin:12px 0 8px 0">智能发车条件设置(0为不限制)</n-divider>
             <div class="settings-grid">
@@ -479,6 +598,17 @@
               <div class="setting-item" style="flex-direction:row;justify-content:space-between;align-items:center">
                 <label class="setting-label">刷新卷 >=</label>
                 <n-input-number v-model:value="batchSettings.smartDepartureTicketThreshold" :min="0" :step="1" size="small" style="width:100px" />
+              </div>
+            </div>
+            <n-divider title-placement="left" style="margin:12px 0 8px 0">功法赠送设置</n-divider>
+            <div class="settings-grid">
+              <div class="setting-item" style="flex-direction:row;justify-content:space-between;align-items:center">
+                <label class="setting-label">接收者ID</label>
+                <n-input-number v-model:value="batchSettings.receiverId" placeholder="ID" size="small" style="width:100px" :show-button="false" />
+              </div>
+              <div class="setting-item" style="flex-direction:row;justify-content:space-between;align-items:center">
+                <label class="setting-label">密码</label>
+                <n-input v-model:value="batchSettings.password" type="password" placeholder="密码" size="small" style="width:100px" />
               </div>
             </div>
           </n-grid-item>
@@ -526,17 +656,6 @@
                 <n-input-number v-model:value="batchSettings.reconnectDelay" :min="100" :max="5000" :step="100" size="small" style="width:100px" />
               </div>
             </div>
-            <n-divider title-placement="left" style="margin:12px 0 8px 0">功法赠送设置</n-divider>
-            <div class="settings-grid">
-              <div class="setting-item" style="flex-direction:row;justify-content:space-between;align-items:center">
-                <label class="setting-label">接收者ID</label>
-                <n-input-number v-model:value="batchSettings.receiverId" placeholder="ID" size="small" style="width:100px" :show-button="false" />
-              </div>
-              <div class="setting-item" style="flex-direction:row;justify-content:space-between;align-items:center">
-                <label class="setting-label">密码</label>
-                <n-input v-model:value="batchSettings.password" type="password" placeholder="密码" size="small" style="width:100px" />
-              </div>
-            </div>
             <n-divider title-placement="left" style="margin:12px 0 8px 0">系统设置</n-divider>
             <div class="settings-grid">
               <div class="setting-item" style="flex-direction:row;justify-content:space-between;align-items:center">
@@ -558,23 +677,64 @@
             </div>
           </n-grid-item>
         </n-grid>
-        <div class="modal-actions" style="margin-top:20px;text-align:right">
-          <n-button @click="showBatchSettingsModal = false" style="margin-right:12px">取消</n-button>
-          <n-button type="primary" @click="saveBatchSettings">保存设置</n-button>
-        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:20px;text-align:right">
+        <n-button @click="showBatchSettingsModal = false" style="margin-right:12px">取消</n-button>
+        <n-button type="primary" @click="saveBatchSettings">保存设置</n-button>
       </div>
     </n-modal>
-  </div>
-</template>
+
+        <!-- ==================== 梦境商人购买配置弹窗 ==================== -->
+        <n-modal
+          v-model:show="showDreamBuyModal"
+          preset="card"
+          title="梦境商品购买配置"
+          style="width: 90%; max-width: 600px"
+        >
+          <div class="settings-content">
+            <div class="settings-grid">
+              <n-alert type="info" show-icon style="margin-bottom: 12px">
+                请勾选需要购买的商品。只会购买列表中存在的商品。
+              </n-alert>
+              <div style="display: flex; gap: 12px; margin-bottom: 12px">
+                <n-button size="small" type="warning" @click="selectGoldItems">一键勾选金币商品</n-button>
+                <n-button size="small" @click="selectAllItems">全选所有</n-button>
+                <n-button size="small" @click="clearAllItems">清空选择</n-button>
+              </div>
+              <div v-for="(merchant, id) in merchantConfig" :key="id" style="margin-bottom: 16px">
+                <div style="font-weight: bold; margin-bottom: 8px">{{ merchant.name }}</div>
+                <n-grid :cols="3" :x-gap="12" :y-gap="8">
+                  <n-grid-item v-for="(item, index) in merchant.items" :key="index">
+                    <n-checkbox
+                      :value="`${id}-${index}`"
+                      :checked="dreamBuyList.includes(`${id}-${index}`)"
+                      @update:checked="(checked) => toggleDreamItem(`${id}-${index}`, checked)"
+                    >
+                      {{ item }}
+                    </n-checkbox>
+                  </n-grid-item>
+                </n-grid>
+              </div>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px; text-align: right">
+              <n-button @click="showDreamBuyModal = false" style="margin-right: 12px">取消</n-button>
+              <n-button type="primary" @click="saveDreamBuyConfig">保存配置</n-button>
+            </div>
+          </div>
+        </n-modal>
+      </div>
+    </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive, h } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, h, watch } from 'vue'
 import { NButton, NTag, useMessage } from 'naive-ui'
 import { healthApi, taskApi, logApi, templateApi, settingsApi, tokenApi } from '@/utils/api'
+import api from '@/utils/api'
 import { useTokenStore } from '@/stores/tokenStore'
 import { availableTasks, formationOptions, bossTimesOptions, boxTypeOptions, fishTypeOptions } from '@/utils/batch'
+import { merchantConfig, goldItemsConfig } from '@/utils/dreamConstants'
 import { validateCronExpression, calculateNextRuns, calculateNextExecutionTime } from '@/utils/batch/cronUtils'
-import { CheckmarkCircle, CloseCircle, Settings } from '@vicons/ionicons5'
+import { CheckmarkCircle, CloseCircle, Settings, AlertCircleOutline, Cube } from '@vicons/ionicons5'
 import moment from 'moment'
 
 const message = useMessage()
@@ -582,14 +742,23 @@ const tokenStore = useTokenStore()
 
 // ==================== 状态 ====================
 const backendOnline = ref(false)
+const supabaseOnline = ref(false)
+const healthData = ref(null)
 const tasks = ref([])
 const logs = ref([])
+const logSummary = ref([])
+const logViewTab = ref('summary')
 const tasksLoading = ref(false)
 const logsLoading = ref(false)
 const showTaskModal = ref(false)
 const showDeleteModal = ref(false)
 const taskToDelete = ref(null)
 const editingTaskId = ref(null)
+const refreshing = ref(false)
+const autoRefresh = ref(false)
+const lastCheckTime = ref('--')
+const totalTokens = ref(0)
+let autoRefreshTimer = null
 
 // ==================== 任务模板状态 ====================
 const showTaskTemplateModal = ref(false)
@@ -657,7 +826,17 @@ const parseCronExpression = (expression) => {
 
 // ==================== 批量设置状态 ====================
 const showBatchSettingsModal = ref(false)
+
+// 梦境商人购买列表默认配置
+const defaultDreamPurchaseList = []
+for (const merchantId in goldItemsConfig) {
+  goldItemsConfig[merchantId].forEach((index) => {
+    defaultDreamPurchaseList.push(`${merchantId}-${index}`)
+  })
+}
+
 const batchSettings = reactive({
+  dreamPurchaseList: [...defaultDreamPurchaseList],
   boxCount: 100,
   fishCount: 100,
   recruitCount: 100,
@@ -687,6 +866,56 @@ const batchSettings = reactive({
   smartDepartureTicketThreshold: 0,
   smartDepartureMatchAll: false
 })
+
+// ==================== 梦境商人购买状态 ====================
+const showDreamBuyModal = ref(false)
+const dreamBuyList = ref([...batchSettings.dreamPurchaseList])
+
+const openDreamBuyModal = () => {
+  dreamBuyList.value = [...batchSettings.dreamPurchaseList]
+  showDreamBuyModal.value = true
+}
+
+const toggleDreamItem = (itemKey, checked) => {
+  if (checked) {
+    if (!dreamBuyList.value.includes(itemKey)) {
+      dreamBuyList.value.push(itemKey)
+    }
+  } else {
+    dreamBuyList.value = dreamBuyList.value.filter((k) => k !== itemKey)
+  }
+}
+
+const selectGoldItems = () => {
+  for (const merchantId in goldItemsConfig) {
+    const items = goldItemsConfig[merchantId]
+    items.forEach((index) => {
+      if (!dreamBuyList.value.includes(`${merchantId}-${index}`)) {
+        dreamBuyList.value.push(`${merchantId}-${index}`)
+      }
+    })
+  }
+}
+
+const selectAllItems = () => {
+  const newSelection = new Set(dreamBuyList.value)
+  for (const merchantId in merchantConfig) {
+    const items = merchantConfig[merchantId].items
+    items.forEach((_, index) => {
+      newSelection.add(`${merchantId}-${index}`)
+    })
+  }
+  dreamBuyList.value = Array.from(newSelection)
+}
+
+const clearAllItems = () => {
+  dreamBuyList.value = []
+}
+
+const saveDreamBuyConfig = () => {
+  batchSettings.dreamPurchaseList = [...dreamBuyList.value]
+  showDreamBuyModal.value = false
+}
 
 // ==================== Token / 任务列表 ====================
 const sortedTokens = computed(() => tokenStore.gameTokens || [])
@@ -1239,6 +1468,16 @@ function formatBeijingTime(utcStr) {
   return `${mm}/${dd} ${hh}:${mi}:${ss}`
 }
 
+// 解析合并后的失败原因：格式 "cmd1 - reason1 | cmd2 - reason2" → [{cmd, reason}]
+function parseFailureReasons(reasonStr) {
+  if (!reasonStr) return []
+  return reasonStr.split(' | ').map(part => {
+    const idx = part.indexOf(' - ')
+    if (idx === -1) return { cmd: '', reason: part }
+    return { cmd: part.substring(0, idx).trim(), reason: part.substring(idx + 3).trim() }
+  })
+}
+
 const logColumns = [
   { title: '时间', key: 'created_at', width: 160, render: (row) => formatBeijingTime(row.created_at || row.ts) },
   { title: '角色', key: 'token_name', width: 80 },
@@ -1250,11 +1489,39 @@ const logColumns = [
 // ==================== API 调用 ====================
 async function checkHealth() {
   try {
-    await healthApi.check()
+    const health = await healthApi.check()
     backendOnline.value = true
+    healthData.value = health || null
+    if (health && health.supabase !== undefined) {
+      supabaseOnline.value = health.supabase
+    } else {
+      try {
+        await logApi.listFromDb(1)
+        supabaseOnline.value = true
+      } catch {
+        supabaseOnline.value = false
+      }
+    }
   } catch {
     backendOnline.value = false
+    supabaseOnline.value = false
   }
+}
+
+async function loadTotalTokens() {
+  try {
+    const tokens = await tokenApi.getAll()
+    totalTokens.value = Array.isArray(tokens) ? tokens.length : 0
+  } catch {
+    totalTokens.value = 0
+  }
+}
+
+const refreshAll = async () => {
+  refreshing.value = true
+  lastCheckTime.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
+  await Promise.all([checkHealth(), fetchTasks(), fetchLogs(), loadTotalTokens()])
+  refreshing.value = false
 }
 
 async function fetchTasks() {
@@ -1272,19 +1539,33 @@ async function fetchTasks() {
 async function fetchLogs() {
   logsLoading.value = true
   try {
-    // 优先从 Supabase 持久化日志读取，内存日志仅作备用
-    try {
-      const dbLogs = await logApi.listFromDb(200)
-      logs.value = dbLogs || []
-    } catch {
-      // DB 不可用时回退到内存日志
-      const res = await logApi.list(100)
-      logs.value = (res || []).filter(l => l.category !== 'cron')
-    }
+    // 并行加载聚合摘要和详细日志
+    const [summaryResult, detailLogs] = await Promise.all([
+      logApi.summary(500).catch(() => []),
+      // 加载详细日志（聚合视图和详细视图共享 loading 状态）
+      logApi.listFromDb(200).catch(() => {
+        return logApi.list(100).then(res => (res || []).filter(l => l.category !== 'cron')).catch(() => [])
+      })
+    ])
+    logSummary.value = summaryResult || []
+    logs.value = detailLogs || []
   } catch (e) {
     console.error('获取日志失败:', e)
   } finally {
     logsLoading.value = false
+  }
+}
+
+async function clearLogs() {
+  try {
+    // 调用 API 清除 Supabase 日志
+    await api.delete('/api/logs')
+    logs.value = []
+    logSummary.value = []
+    message.success('日志已清除')
+  } catch (e) {
+    console.error('清除日志失败:', e)
+    message.error('清除日志失败')
   }
 }
 
@@ -1326,36 +1607,150 @@ async function doDelete() {
   }
 }
 
+// 自动刷新逻辑
+watch(autoRefresh, (val) => {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+    autoRefreshTimer = null
+  }
+  if (val) {
+    autoRefreshTimer = setInterval(() => {
+      refreshAll()
+    }, 30000)
+  }
+})
+
 onMounted(() => {
-  checkHealth()
-  fetchTasks()
-  fetchLogs()
-  loadTaskTemplates()
+  refreshAll()
+})
+
+onUnmounted(() => {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+    autoRefreshTimer = null
+  }
 })
 </script>
 
 <style scoped>
 .dashboard-page {
-  min-height: 100vh;
-  padding: 20px;
-  background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
+  /* No background/padding - layout provides bg-gray-100 and p-6 */
 }
 
-[data-theme="dark"] .dashboard-page {
-  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
-}
 .status-grid {
   margin-bottom: 20px;
 }
-.section-card {
-  margin-bottom: 20px;
+
+.status-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+  padding: 0 4px;
 }
-/* 设置弹窗 label/item 样式（覆盖全局，确保左右排列） */
+
+.status-footer-text {
+  font-size: 13px;
+  color: #6B7280;
+}
+
+.status-meta {
+  font-size: 13px;
+  color: #9CA3AF;
+  margin-top: 4px;
+}
+
+.section-card {
+  margin-bottom: 24px;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
+}
+
+.dashboard-action-btn {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #4F46E5;
+  border-color: #4F46E5;
+  color: #fff;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+}
+
+.dashboard-action-btn:hover {
+  background-color: #4338CA;
+  border-color: #4338CA;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
+}
+
+/* 状态卡片 - Tailwind Dashboard KPI 风格 */
+.status-card {
+  background: #FFFFFF;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.status-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px;
+}
+
+.status-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.status-icon-wrapper.success {
+  background-color: #ECFDF5;
+}
+
+.status-icon-wrapper.error {
+  background-color: #FEF2F2;
+}
+
+.status-icon-wrapper.warning {
+  background-color: #FFFBEB;
+}
+
+.status-icon-wrapper.info {
+  background-color: #EEF2FF;
+}
+
+.status-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+
+/* 设置弹窗样式 */
 .settings-content .setting-label {
   display: inline-block;
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: #111827;
   margin-bottom: 0;
   min-width: 120px;
   vertical-align: middle;
@@ -1375,28 +1770,27 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 8px;
-  color: #333;
+  color: #111827;
 }
 .settings-grid {
   display: flex;
   flex-direction: column;
 }
-/* 分组样式 */
 .settings-group {
   margin-bottom: 20px;
   padding: 16px;
-  background: #f8fafc;
+  background: #F9FAFB;
   border-radius: 8px;
-  border: 1px solid #e8eef5;
+  border: 1px solid #E5E7EB;
 }
 .settings-group--bordered {
-  background: #f0f7ff;
-  border: 1px solid #c8e0ff;
+  background: #EEF2FF;
+  border: 1px solid #C7D2FE;
 }
 .settings-group .group-title {
   font-size: 14px;
   font-weight: 600;
-  color: #1a56db;
+  color: #4F46E5;
   margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
@@ -1421,7 +1815,7 @@ onMounted(() => {
 }
 .setting-item-tip {
   font-size: 12px;
-  color: #86909c;
+  color: #9CA3AF;
   margin-top: -6px;
   margin-bottom: 4px;
   padding-left: 120px;
@@ -1438,35 +1832,56 @@ onMounted(() => {
 }
 .switch-label {
   font-size: 14px;
-  color: #333;
+  color: #374151;
 }
+
 /* Cron表达式解析样式 */
 .cron-parser {
   margin-top: 8px;
   padding: 8px 12px;
-  background: #f0f7ff;
+  background: #EEF2FF;
   border-radius: 6px;
-  border: 1px solid #d0e8ff;
+  border: 1px solid #C7D2FE;
 }
 .cron-validation {
   font-size: 13px;
   margin-bottom: 4px;
 }
-.cron-validation.success { color: #18a058; }
-.cron-validation.error { color: #d03050; }
+.cron-validation.success { color: #059669; }
+.cron-validation.error { color: #DC2626; }
 .cron-next-runs h4 {
   font-size: 12px;
   font-weight: 500;
-  color: #666;
+  color: #6B7280;
   margin: 4px 0 2px;
 }
 .cron-next-runs ul {
   margin: 0;
   padding-left: 16px;
   font-size: 12px;
-  color: #555;
+  color: #4B5563;
 }
 .cron-next-runs ul li {
   line-height: 1.6;
+}
+
+/* 日志卡片 */
+.tech-card {
+  border: 1px solid #D1FAE5 !important;
+  transition: all 0.2s ease;
+}
+
+.tech-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .status-grid :deep(.n-grid) {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .setting-switches {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

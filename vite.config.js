@@ -139,7 +139,7 @@ export default defineConfig(async () => {
       },
     },
     server: {
-      port: 3000,
+      port: 5174,
       open: true,
       host: true,
       proxy: {

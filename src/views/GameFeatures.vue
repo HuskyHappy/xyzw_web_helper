@@ -324,60 +324,17 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .game-features-page {
-  min-height: 100dvh;
-  background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
-  padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
-}
-
-/* 深色主题下背景 */
-[data-theme="dark"] .game-features-page {
-  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
+  /* No background/padding - layout provides bg-gray-100 and p-6 */
 }
 
 // 页面头部
 .page-header {
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-light);
-  padding: var(--spacing-lg) 0;
-}
-
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 0 var(--spacing-md);
-  }
-
-  .page-header {
-    padding: var(--spacing-md) 0;
-    margin-bottom: var(--spacing-md);
-
-    .header-content {
-      flex-direction: column;
-      gap: var(--spacing-sm);
-      text-align: center;
-    }
-
-    .page-title {
-      font-size: var(--font-size-xl);
-    }
-  }
-
-  .features-grid-section {
-    padding: var(--spacing-md) 0;
-  }
-
-  .ws-status-section {
-    padding: 0 0 var(--spacing-lg) 0;
-  }
-
-  .ws-status-card {
-    padding: var(--spacing-md);
-  }
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  padding: 20px 24px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border-radius: 0.5rem;
+  margin-bottom: 24px;
 }
 
 .header-content {
@@ -391,122 +348,127 @@ onUnmounted(() => {
 }
 
 .page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px 0;
 }
 
 .page-subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
+  color: #6B7280;
+  font-size: 14px;
   margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .connection-status {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-medium);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
 
   &.connected {
-    background: rgba(24, 160, 88, 0.1);
-    color: var(--success-color);
+    background: rgba(5, 150, 105, 0.1);
+    color: #059669;
   }
 
   &.disconnected {
-    background: rgba(208, 48, 80, 0.1);
-    color: var(--error-color);
+    background: rgba(220, 38, 38, 0.1);
+    color: #DC2626;
   }
 }
 
-// 反馈提示区域
-.feedback-section {
-  padding: var(--spacing-md) 0;
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 // 功能模块网格
 .features-grid-section {
-  padding: var(--spacing-xl) 0;
+  margin-top: 24px;
 }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
 }
 
 .feature-card {
-  background: var(--bg-primary);
-  border-radius: var(--border-radius-xl);
-  padding: var(--spacing-lg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all var(--transition-normal);
-  border-left: 4px solid var(--primary-color);
+  background: #FFFFFF;
+  border-radius: 0.5rem;
+  padding: 20px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  border-left: 4px solid #4F46E5;
 
   &:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
   }
 
-  // 不同功能的主题色
   &.team-challenge {
-    border-left-color: #2080f0;
+    border-left-color: #3B82F6;
   }
 
   &.daily-tasks {
-    border-left-color: #f0a020;
+    border-left-color: #F59E0B;
   }
 
   &.salt-robot {
-    border-left-color: #18a058;
+    border-left-color: #10B981;
   }
 
   &.idle-time {
-    border-left-color: #d03050;
+    border-left-color: #EF4444;
   }
 
   &.power-switch {
-    border-left-color: #7c3aed;
+    border-left-color: #8B5CF6;
   }
 
   &.club-ranking {
-    border-left-color: #f59e0b;
+    border-left-color: #F59E0B;
   }
 
   &.club-checkin {
-    border-left-color: #10b981;
+    border-left-color: #059669;
   }
 
   &.tower-challenge {
-    border-left-color: #6366f1;
+    border-left-color: #6366F1;
   }
 }
 
 .card-header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .feature-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--border-radius-medium);
-  background: var(--primary-color-light);
-  color: var(--primary-color);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #EEF2FF;
+  color: #4F46E5;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 
   :deep(svg) {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 }
 
@@ -514,106 +476,107 @@ onUnmounted(() => {
   flex: 1;
 
   h3 {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-primary);
-    margin: 0 0 var(--spacing-xs) 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 2px 0;
   }
 }
 
 .feature-subtitle {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  color: #6B7280;
+  font-size: 13px;
 }
 
 .feature-badge,
 .feature-status {
   flex-shrink: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-small);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .feature-status {
   &.in-progress {
-    background: rgba(240, 160, 32, 0.1);
-    color: var(--warning-color);
+    background: rgba(245, 158, 11, 0.1);
+    color: #D97706;
   }
 
   &.completed {
-    background: rgba(24, 160, 88, 0.1);
-    color: var(--success-color);
+    background: rgba(5, 150, 105, 0.1);
+    color: #059669;
   }
 
   &.waiting {
-    background: rgba(32, 128, 240, 0.1);
-    color: var(--info-color);
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
   }
 }
 
 .card-content {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: 16px;
 }
 
 .progress-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 8px;
 
   .stage-text {
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
+    font-weight: 500;
+    color: #111827;
   }
 
   .progress-text {
-    font-weight: var(--font-weight-medium);
-    color: var(--text-secondary);
+    font-weight: 500;
+    color: #6B7280;
   }
 }
 
 .time-display {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
   text-align: center;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 8px;
   font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace;
 }
 
 .task-description {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  color: #6B7280;
+  font-size: 13px;
   line-height: 1.5;
 }
 
 .card-actions {
-  margin-top: var(--spacing-lg);
+  margin-top: 16px;
 }
 
 // WebSocket状态区域
 .ws-status-section {
-  padding: 0 0 var(--spacing-xl) 0;
+  margin-top: 24px;
 }
 
 .ws-status-card {
-  background: var(--bg-primary);
-  border-radius: var(--border-radius-large);
-  padding: var(--spacing-lg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: #FFFFFF;
+  border-radius: 0.5rem;
+  padding: 20px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
 }
 
 .status-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 16px;
 
   h3 {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
     margin: 0;
   }
 }
@@ -621,54 +584,44 @@ onUnmounted(() => {
 .status-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 8px;
 }
 
 .status-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid var(--border-light);
+  padding: 8px 0;
+  border-bottom: 1px solid #F3F4F6;
 
   &:last-child {
     border-bottom: none;
   }
 
   span:first-child {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    color: #6B7280;
+    font-size: 13px;
   }
 
   span:last-child {
-    font-weight: var(--font-weight-medium);
-    font-size: var(--font-size-sm);
+    font-weight: 500;
+    font-size: 13px;
   }
 }
 
 .status-connected {
-  color: var(--success-color);
+  color: #059669;
 }
 
 .status-disconnected {
-  color: var(--error-color);
+  color: #DC2626;
 }
 
-// 响应式设计
-@media (max-width: 1024px) {
-  .features-grid {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  }
-}
-
+// 响应式
 @media (max-width: 768px) {
-  .container {
-    padding: 0 var(--spacing-md);
-  }
-
   .header-content {
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 12px;
     text-align: center;
   }
 
@@ -677,13 +630,13 @@ onUnmounted(() => {
   }
 
   .feature-card {
-    padding: var(--spacing-md);
+    padding: 16px;
   }
 
   .card-header {
     flex-direction: column;
     text-align: center;
-    gap: var(--spacing-sm);
+    gap: 8px;
   }
 }
 </style>

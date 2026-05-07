@@ -53,3 +53,17 @@ export function isDungeonOpen() {
   const day = now.getDay(); // 0=周日, 1=周一, 2=周二, 3=周三, 4=周四, 5=周五, 6=周六
   return day === 0 || day === 1 || day === 3 || day === 4; // 周日、周一、周三、周四
 }
+
+// 江湖黑市商品配置
+export const blackMarketGoods = [
+  { goodsIndex: 0, name: "黑市福利", desc: "500金砖" },
+  { goodsIndex: 1, name: "黑市见面礼", desc: "5招募" },
+  { goodsIndex: 2, name: "黑市惊喜礼", desc: "10招募" },
+  { goodsIndex: 3, name: "初级黑市包", desc: "6000进阶" },
+  { goodsIndex: 4, name: "中级黑市包", desc: "各种宝箱各10个" },
+  { goodsIndex: 5, name: "高级黑市包", desc: "40招募" },
+  { goodsIndex: 6, name: "顶级鱼竿包", desc: "金鱼竿各30" },
+  { goodsIndex: 7, name: "白玉黑市包", desc: "2000白玉" },
+  { goodsIndex: 8, name: "特级灵贝包", desc: "10灵贝" },
+  { goodsIndex: 9, name: "养成补给包", desc: "晶石和扳手" },
+];

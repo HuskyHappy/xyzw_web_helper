@@ -57,6 +57,7 @@
             v-for="(tokenData, roleId) in localTokenStore.gameTokens"
             :key="roleId"
             class="game-token-item"
+            @click.self="toggleWebSocket(roleId, tokenData)"
           >
             <div class="token-header">
               <div class="role-info">
@@ -155,6 +156,7 @@ import {
   SyncCircle,
   CopyOutline,
 } from "@vicons/ionicons5";
+import { getAllGameTokens } from "@/utils/tokenDb";
 
 const message = useMessage();
 const dialog = useDialog();
@@ -256,14 +258,32 @@ const handleTokenAction = (action, roleId, tokenData) => {
       copyToken(tokenData.token);
       break;
     case "refresh":
-      regenerateToken(roleId);
-      break;
     case "refresh-url":
-      refreshTokenFromUrl(roleId, tokenData);
+      // 修改为与页面上方"刷新"功能一致：从数据库重新加载token
+      refreshSingleToken(roleId);
       break;
     case "delete":
       removeToken(roleId);
       break;
+  }
+};
+
+// 刷新单个token（与页面上方"刷新"功能一致）
+const refreshSingleToken = async (roleId) => {
+  try {
+    // 从IndexedDB重新加载该token的数据
+    const allTokens = await getAllGameTokens();
+    
+    if (allTokens && allTokens[roleId]) {
+      // 更新内存中的token数据
+      localTokenStore.gameTokens[roleId] = allTokens[roleId];
+      message.success("Token数据已刷新");
+    } else {
+      message.warning("未找到该Token的数据");
+    }
+  } catch (error) {
+    console.error("刷新Token失败:", error);
+    message.error("刷新失败: " + error.message);
   }
 };
 

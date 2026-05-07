@@ -182,23 +182,35 @@ const handleImport = async () => {
     message.error("请先上传bin文件！");
     return;
   }
+  let successCount = 0;
+  let failCount = 0;
   for (const role of roleList.value) {
-    // tokenStore.gameTokens中发现已存在的重复名称，则移出token后重新添加
-    const gameToken = tokenStore.gameTokens.find((t) => t.id === role.id);
-    if (gameToken) {
-      console.log("移除同名token:", gameToken);
-      // tokenStore.removeToken(gameToken.id);
-      await tokenStore.updateToken(gameToken.id, {
-        ...role,
-      });
-    } else {
-      await tokenStore.addToken({
-        ...role,
-      });
+    try {
+      // tokenStore.gameTokens中发现已存在的重复名称，则移出token后重新添加
+      const gameToken = tokenStore.gameTokens.find((t) => t.id === role.id);
+      if (gameToken) {
+        console.log("更新同名token:", gameToken);
+        await tokenStore.updateToken(gameToken.id, {
+          ...role,
+        });
+      } else {
+        await tokenStore.addToken({
+          ...role,
+        });
+      }
+      successCount++;
+    } catch (err) {
+      failCount++;
+      console.error("添加Token失败:", err);
+      message.error(`添加 ${role.name} 失败`);
     }
   }
   console.log("当前Token列表:", tokenStore.gameTokens);
-  message.success("Token添加成功");
+  if (failCount === 0) {
+    message.success(`全部 ${successCount} 个Token添加成功`);
+  } else {
+    message.warning(`${successCount} 个成功, ${failCount} 个失败，请检查控制台`);
+  }
   roleList.value = [];
   $emit("ok");
 };

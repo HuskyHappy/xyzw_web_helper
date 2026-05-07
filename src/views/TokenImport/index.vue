@@ -6,11 +6,24 @@
         <div class="header-content">
           <div class="header-top">
             <img src="/icons/xiaoyugan.png" alt="XYZW" class="brand-logo" />
-            <!-- 主题切换按钮 -->
-            <ThemeToggle />
+            <!-- 占位 -->
           </div>
           <h1>游戏Token管理</h1>
         </div>
+      </div>
+
+      <!-- 顶部导航按钮 - 在框框外部，位于游戏Token管理下方左侧 -->
+      <div class="tokens-navbar">
+        <n-space align="center" :size="12">
+          <n-button type="success" @click="goHome" class="nav-card-btn">
+            <template #icon><n-icon><Home /></n-icon></template>
+            主页
+          </n-button>
+          <n-button type="success" @click="goToDashboard" class="nav-card-btn">
+            <template #icon><n-icon><List /></n-icon></template>
+            批量日常
+          </n-button>
+        </n-space>
       </div>
 
       <!-- 限流等待提示 -->
@@ -83,15 +96,12 @@
 
       <!-- Token列表 -->
       <div v-if="tokenStore.hasTokens" class="tokens-section">
+        <!-- 标题和排序 -->
         <div class="section-header">
-          <n-space align="center">
+          <div class="title-row">
             <h2>我的Token列表 ({{ tokenStore.gameTokens.length }}个)</h2>
-            <n-radio-group v-model:value="viewMode" size="small">
-              <n-radio-button value="table">表格</n-radio-button>
-              <n-radio-button value="list">列表</n-radio-button>
-              <n-radio-button value="card">卡片</n-radio-button>
-            </n-radio-group>
-            <n-divider vertical style="height: 24px"></n-divider>
+          </div>
+          <div class="sort-row">
             <n-button-group size="small">
               <n-button
                 @click="toggleSort('name')"
@@ -118,432 +128,89 @@
                 最后使用 {{ getSortIcon("lastUsed") }}
               </n-button>
             </n-button-group>
-          </n-space>
-          <div class="header-actions">
-            <n-space align="center" :size="8">
-              <n-button type="default" size="small" @click="goHome">
-                <template #icon><n-icon><Home /></n-icon></template>
-                主页
-              </n-button>
-              <n-button type="success" size="small" @click="goToDashboard">
-                <template #icon><n-icon><List /></n-icon></template>
-                批量功能
-              </n-button>
-              <n-button
-                v-if="!showImportForm"
-                type="primary"
-                size="small"
-                @click="showImportForm = true"
-              >
-                <template #icon><n-icon><Add /></n-icon></template>
-                添加Token
-              </n-button>
-              <n-divider vertical style="height: 24px"></n-divider>
-              <n-button-group size="small">
-                <n-button @click="refreshAllTokens">
-                  <template #icon><n-icon><Refresh /></n-icon></template>
-                  刷新
-                </n-button>
-                <n-button @click="handleBulkAction('updateInfo')">
-                  <template #icon><n-icon><Settings /></n-icon></template>
-                  更新
-                </n-button>
-                <n-button @click="handleBulkAction('export')">
-                  <template #icon><n-icon><Download /></n-icon></template>
-                  导出
-                </n-button>
-                <n-button @click="handleBulkAction('import')">
-                  <template #icon><n-icon><CloudUpload /></n-icon></template>
-                  导入
-                </n-button>
-                <n-button @click="handleBulkAction('clean')">
-                  <template #icon><n-icon><Trash /></n-icon></template>
-                  清理
-                </n-button>
-                <n-button @click="handleBulkAction('disconnect')">
-                  <template #icon><n-icon><CloseCircle /></n-icon></template>
-                  断开
-                </n-button>
-                <n-button type="error" @click="clearSelectedTokens">
-                  <template #icon><n-icon><Trash /></n-icon></template>
-                  清除选择
-                </n-button>
-              </n-button-group>
-            </n-space>
           </div>
         </div>
 
-        <div class="tokens-grid" v-if="viewMode === 'card'">
-          <a-card
-            v-for="(token, index) in sortedTokens"
-            :key="token.id"
-            draggable="true"
-            @dragstart="handleDragStart(index, $event)"
-            @dragover="handleDragOver($event)"
-            @drop="handleDrop(index, $event)"
-            :class="{
-              'token-card': true,
-              active: selectedTokenId === token.id,
-            }"
-            @click="selectToken(token)"
-          >
-            <template #title>
-              <a-space class="token-name" align="center">
-                <n-avatar
-                  v-if="token.avatar"
-                  :src="token.avatar"
-                  round
-                  size="small"
-                  fallback-src="/icons/xiaoyugan.png"
-                />
-                {{ token.name }}
-                <a-tag
-                  :color="getServerTagColor(token.id)"
-                  v-if="token.server"
-                  >{{ token.server }}</a-tag
-                >
-                <!-- 连接状态指示器 -->
-                <a-badge
-                  :status="getTokenStyle(token.id)"
-                  :text="getConnectionStatusText(token.id)"
-                />
-                <!-- 连接状态文字 -->
-                <!-- <a-tag color="green">
-                  {{ getConnectionStatusText(token.id) }}
-                </a-tag> -->
-              </a-space>
-            </template>
-            <template #extra>
-              <n-dropdown
-                :options="getTokenActions(token)"
-                @select="(key) => handleTokenAction(key, token)"
-              >
-                <n-button text>
-                  <template #icon>
-                    <n-icon>
-                      <EllipsisHorizontal />
-                    </n-icon>
-                  </template>
-                </n-button>
-              </n-dropdown>
-            </template>
-
-            <template #default>
-              <div class="token-display">
-                <span class="token-label">Token:</span>
-                <code class="token-value">{{ maskToken(token.token) }}</code>
-              </div>
-
-              <!-- 备注信息 -->
-              <div
-                v-if="editingRemark === token.id"
-                class="token-remark token-remark-edit"
-                @click.stop
-              >
-                <span class="remark-label">备注：</span>
-                <n-input
-                  v-model:value="tempRemarks[token.id]"
-                  type="textarea"
-                  :rows="2"
-                  placeholder="添加备注信息..."
-                  @blur="saveRemark(token)"
-                  @keyup.enter="saveRemark(token)"
-                  @keyup.esc="cancelEditRemark()"
-                  autofocus
-                />
-              </div>
-              <div
-                v-else
-                class="token-remark"
-                @click.stop="startEditRemark(token)"
-              >
-                <span class="remark-label">备注：</span>
-                <span class="remark-value">{{
-                  token.remark || "点击添加备注"
-                }}</span>
-                <n-icon style="margin-left: 4px; color: var(--text-tertiary)">
-                  <Create />
-                </n-icon>
-              </div>
-
-              <a-button
-                :loading="refreshingTokens.has(token.id)"
-                @click.stop="refreshToken(token)"
-              >
-                <template #icon>
-                  <n-icon>
-                    <Refresh />
-                  </n-icon>
-                </template>
-                {{ token.sourceUrl ? "刷新" : "重新获取" }}
-              </a-button>
-
-              <div class="token-timestamps">
-                <div class="timestamp-item">
-                  <span class="timestamp-label">创建：</span>
-                  <span class="timestamp-value">{{
-                    formatTime(token.createdAt)
-                  }}</span>
-                </div>
-                <div class="timestamp-item">
-                  <span class="timestamp-label">使用：</span>
-                  <span class="timestamp-value">{{
-                    formatTime(token.lastUsed)
-                  }}</span>
-                </div>
-              </div>
-
-              <!-- 存储类型信息 -->
-              <div class="storage-info">
-                <div class="storage-item">
-                  <span class="storage-label">存储类型：</span>
-                  <n-tag
-                    size="small"
-                    :type="
-                      token.importMethod === 'url' ||
-                      token.importMethod === 'bin' ||
-                      token.importMethod === 'wxQrcode' ||
-                      token.upgradedToPermanent
-                        ? 'success'
-                        : 'warning'
-                    "
-                  >
-                    {{
-                      token.importMethod === "url" ||
-                      token.importMethod === "bin" ||
-                      token.importMethod === "wxQrcode" ||
-                      token.upgradedToPermanent
-                        ? "长期有效"
-                        : "临时存储"
-                    }}
-                  </n-tag>
-                </div>
-
-                <!-- 升级选项（仅对临时存储的token显示） -->
-                <div
-                  v-if="
-                    !(
-                      token.importMethod === 'url' ||
-                      token.importMethod === 'bin' ||
-                      token.importMethod === 'wxQrcode' ||
-                      token.upgradedToPermanent
-                    )
-                  "
-                  class="storage-upgrade"
-                >
-                  <n-button
-                    size="tiny"
-                    type="success"
-                    ghost
-                    @click.stop="upgradeTokenToPermanent(token)"
-                  >
-                    <template #icon>
-                      <n-icon>
-                        <Star />
-                      </n-icon>
-                    </template>
-                    升级为长期有效
-                  </n-button>
-                </div>
-              </div>
-            </template>
-            <template #actions>
-              <n-button
-                type="primary"
-                size="large"
-                block
-                :loading="connectingTokens.has(token.id)"
-                @click="startTaskManagement(token)"
-              >
-                <template #icon>
-                  <n-icon>
-                    <Home />
-                  </n-icon>
-                </template>
-                进入控制台
+        <!-- 操作按钮区域 - 靠右对齐 -->
+        <div class="tokens-toolbar">
+          <div class="toolbar-right">
+          <n-space align="center" :size="8" wrap>
+            <n-button
+              v-if="!showImportForm"
+              type="primary"
+              size="small"
+              @click="showImportForm = true"
+            >
+              <template #icon><n-icon><Add /></n-icon></template>
+              添加Token
+            </n-button>
+            <n-divider vertical style="height: 24px"></n-divider>
+            <n-button-group size="small">
+              <n-button @click="refreshAllTokens">
+                <template #icon><n-icon><Refresh /></n-icon></template>
+                刷新
               </n-button>
-            </template>
-          </a-card>
+              <n-button @click="handleBulkAction('updateInfo')">
+                <template #icon><n-icon><Settings /></n-icon></template>
+                更新
+              </n-button>
+              <n-button @click="handleBulkAction('export')">
+                <template #icon><n-icon><Download /></n-icon></template>
+                导出
+              </n-button>
+              <n-button @click="handleBulkAction('import')">
+                <template #icon><n-icon><CloudUpload /></n-icon></template>
+                导入
+              </n-button>
+              <n-button @click="handleBulkAction('clean')">
+                <template #icon><n-icon><Trash /></n-icon></template>
+                清理
+              </n-button>
+              <n-button @click="handleBulkAction('disconnect')">
+                <template #icon><n-icon><CloseCircle /></n-icon></template>
+                断开
+              </n-button>
+              <n-button type="error" @click="clearSelectedTokens">
+                <template #icon><n-icon><Trash /></n-icon></template>
+                清除选择
+              </n-button>
+            </n-button-group>
+          </n-space>
         </div>
+      </div>
 
-        <!-- Table View -->
-        <div class="tokens-table" v-if="viewMode === 'table'">
+        <!-- Token列表 groupbox -->
+        <div class="tokens-groupbox">
+
+        <!-- Table View (only view mode now) -->
+        <div class="tokens-table">
           <n-data-table
             :columns="tableColumns"
             :data="sortedTokens"
             :row-key="(row) => row.id"
             :pagination="{ pageSize: 50 }"
             :bordered="false"
-            :max-height="600"
+            :max-height="500"
+            v-model:checked-row-keys="checkedRowKeys"
             @update:checked-row-keys="handleTableCheck"
           />
         </div>
-
-        <!-- List View -->
-        <div class="tokens-list" v-else-if="viewMode === 'list'">
-          <n-card
-            v-for="(token, index) in sortedTokens"
-            :key="token.id"
-            draggable="true"
-            @dragstart="handleDragStart(index, $event)"
-            @dragover="handleDragOver($event)"
-            @drop="handleDrop(index, $event)"
-            size="small"
-            style="margin-bottom: 8px"
-            hoverable
-            @click="selectTokenAndConnect(token)"
-            :class="{ active: selectedTokenId === token.id }"
-          >
-            <n-space justify="space-between" align="center">
-              <!-- Info -->
-              <n-space align="center" :size="6">
-                <!-- 连接状态 - 移动到最前端显示 -->
-                <div style="min-width: 65px">
-                  <a-badge
-                    :status="getTokenStyle(token.id)"
-                    :text="getConnectionStatusText(token.id)"
-                  />
-                </div>
-                <!-- Avatar -->
-                <n-avatar
-                  v-if="token.avatar"
-                  :src="token.avatar"
-                  round
-                  size="small"
-                  fallback-src="/icons/xiaoyugan.png"
-                />
-
-                <!-- Token基本信息 -->
-                <div style="min-width: 100px">
-                  <div
-                    style="
-                      display: flex;
-                      align-items: center;
-                      flex-wrap: wrap;
-                      gap: 2px;
-                    "
-                  >
-                    <span style="font-weight: bold; font-size: 0.95em">{{
-                      token.name
-                    }}</span>
-                    <n-tag
-                      size="small"
-                      :type="getServerTagType(token.id)"
-                      v-if="token.server"
-                      >{{ token.server }}</n-tag
-                    >
-                    <!-- 备注信息 - 显示在服务器信息后面 -->
-                    <div
-                      v-if="editingRemark === token.id"
-                      style="
-                        font-size: 0.75em;
-                        display: flex;
-                        align-items: center;
-                        gap: 4px;
-                      "
-                      @click.stop
-                    >
-                      <i
-                        class="i-mdi:note-outline"
-                        style="margin-right: 1px"
-                      ></i>
-                      <n-input
-                        v-model:value="tempRemarks[token.id]"
-                        size="small"
-                        placeholder="添加备注..."
-                        @blur="saveRemark(token)"
-                        @keyup.enter="saveRemark(token)"
-                        @keyup.esc="cancelEditRemark()"
-                        autofocus
-                        style="width: 150px"
-                      />
-                    </div>
-                    <div
-                      v-else
-                      style="
-                        font-size: 0.75em;
-                        color: var(--text-secondary);
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        cursor: pointer;
-                        display: flex;
-                        align-items: center;
-                        gap: 4px;
-                      "
-                      @click.stop="startEditRemark(token)"
-                    >
-                      <i
-                        class="i-mdi:note-outline"
-                        style="margin-right: 1px"
-                      ></i>
-                      {{ token.remark || "点击添加备注" }}
-                      <n-icon
-                        style="font-size: 0.8em; color: var(--text-tertiary)"
-                      >
-                        <Create />
-                      </n-icon>
-                    </div>
-                  </div>
-                </div>
-              </n-space>
-
-              <!-- Actions -->
-              <n-space :size="4">
-                <n-button
-                  size="small"
-                  :loading="refreshingTokens.has(token.id)"
-                  @click.stop="refreshToken(token)"
-                >
-                  <template #icon>
-                    <n-icon>
-                      <Refresh />
-                    </n-icon>
-                  </template>
-                  刷新
-                </n-button>
-                <n-button
-                  size="small"
-                  type="primary"
-                  :loading="connectingTokens.has(token.id)"
-                  @click.stop="startTaskManagement(token)"
-                >
-                  <template #icon>
-                    <n-icon>
-                      <Home />
-                    </n-icon>
-                  </template>
-                  控制台
-                </n-button>
-                <n-button
-                  size="small"
-                  @click.stop="handleTokenAction('edit', token)"
-                >
-                  编辑
-                </n-button>
-                <n-button
-                  size="small"
-                  type="error"
-                  @click.stop="handleTokenAction('delete', token)"
-                >
-                  删除
-                </n-button>
-              </n-space>
-            </n-space>
-          </n-card>
         </div>
       </div>
 
+
+
       <!-- 空状态 -->
-      <a-empty v-if="!tokenStore.hasTokens && !showImportForm">
-        <template #image>
+      <div v-if="!tokenStore.hasTokens && !showImportForm" class="empty-state">
+        <div class="empty-icon">
           <i class="mdi:bed-empty"></i>
-        </template>
-        还没有导入任何Token
-        <a-button type="link" @click="openshowImportForm"
-          >打开Token管理</a-button
-        >
-      </a-empty>
+        </div>
+        <div class="empty-title">还没有导入任何Token</div>
+        <n-button type="primary" @click="openshowImportForm" class="empty-btn">
+          <template #icon><n-icon><Add /></n-icon></template>
+          打开Token管理
+        </n-button>
+      </div>
     </div>
 
     <!-- 编辑Token模态框 -->
@@ -754,8 +421,14 @@ const getSortIcon = (field) => {
   return sortConfig.value.direction === "asc" ? "↑" : "↓";
 };
 
+// 表格勾选状态
+const checkedRowKeys = ref([]);
+
 // 表格列定义
 const tableColumns = [
+  {
+    type: 'selection'
+  },
   {
     title: '序号',
     key: 'index',
@@ -775,7 +448,20 @@ const tableColumns = [
   {
     title: "连接状态",
     key: "status",
-    render: (row) => h('span', getConnectionStatusText(row.id))
+    render: (row) => {
+      const status = getConnectionStatus(row.id);
+      const errorMsg = row.lastError || '';
+      if (status === 'connected') {
+        return h(NTag, { size: 'small', type: 'success' }, () => '已连接');
+      } else if (status === 'error') {
+        const displayMsg = errorMsg ? `连接失败：${errorMsg}` : '连接失败';
+        return h('span', { style: { color: '#8b5cf6', fontSize: '12px' } }, displayMsg);
+      } else if (status === 'connecting') {
+        return h(NTag, { size: 'small', type: 'warning' }, () => '连接中...');
+      } else {
+        return h('span', { style: { color: '#fca5a5', fontSize: '12px' } }, '已断开');
+      }
+    }
   },
   {
     title: "创建时间",
@@ -791,9 +477,9 @@ const tableColumns = [
     title: "操作",
     key: "actions",
     width: 280,
-    render: (row) => h(NSpace, { size: 4, wrap: false }, () => [
+    render: (row) => h(NSpace, { size: 4, wrap: false, align: 'flex-end' }, () => [
       h(NButton, { size: 'small', loading: refreshingTokens.value.has(row.id), onClick: () => refreshToken(row) }, () => '刷新'),
-      h(NButton, { size: 'small', onClick: () => startTaskManagement(row) }, () => '控制台'),
+      h(NButton, { size: 'medium', type: 'success', onClick: () => startTaskManagement(row) }, () => [h(NIcon, { size: 16 }, () => h(List)), ' 控制台']),
       h(NButton, { size: 'small', onClick: () => editToken(row) }, () => '编辑'),
       h(NButton, { size: 'small', type: 'error', onClick: () => deleteToken(row) }, () => '删除')
     ])
@@ -1293,60 +979,68 @@ const deleteToken = (token) => {
   });
 };
 
-// 批量刷新所有URLToken
+// 批量刷新所有Token
 const refreshAllTokens = async () => {
   if (!tokenStore.gameTokens.length) {
     message.warning("没有可刷新的Token");
     return;
   }
 
-  const tokensToRefresh = tokenStore.gameTokens.filter(
-    (token) =>
-      token.importMethod === "url" ||
-      token.importMethod === "wxQrcode" ||
-      token.importMethod === "bin",
-  );
-  const manualTokens = tokenStore.gameTokens.filter(
-    (token) => token.importMethod === "manual",
-  );
-
-  if (tokensToRefresh.length === 0) {
-    message.warning("没有支持自动刷新的Token");
-    return;
-  }
-
-  // 显示确认对话框
   dialog.warning({
-    title: "批量刷新Token",
-    content: "确定要刷新所有支持自动刷新的Token吗?",
+    title: "刷新所有Token",
+    content: "确定要刷新所有Token吗？支持自动刷新的Token将从源地址获取新Token，其他Token将重新连接以更新信息。",
     positiveText: "开始刷新",
     negativeText: "取消",
     onPositiveClick: async () => {
       try {
         let successCount = 0;
         let failCount = 0;
+        const totalTokens = tokenStore.gameTokens.length;
 
         // 显示进度提示
         const loadingMessage = message.loading(
-          `正在批量刷新Token (0/${tokensToRefresh.length})`,
+          `正在刷新Token (0/${totalTokens})`,
           {
             duration: 0,
           },
         );
 
-        for (let i = 0; i < tokensToRefresh.length; i++) {
-          const token = tokensToRefresh[i];
+        // 顺序处理每个token
+        for (let i = 0; i < tokenStore.gameTokens.length; i++) {
+          const token = tokenStore.gameTokens[i];
 
           try {
             // 更新进度显示
-            loadingMessage.content = `正在刷新Token (${i + 1}/${tokensToRefresh.length}): ${token.name}`;
+            loadingMessage.content = `正在刷新Token (${i + 1}/${totalTokens}): ${token.name}`;
 
-            // 调用单个刷新函数（限流器会自动处理等待）
-            await refreshToken(token);
+            // 根据token类型调用不同的刷新方式
+            if (
+              token.importMethod === "url" ||
+              token.importMethod === "wxQrcode" ||
+              token.importMethod === "bin"
+            ) {
+              // 支持自动刷新的token - 从源地址获取新token
+              await refreshToken(token);
+            } else {
+              // 手动导入的token - 重新连接以获取最新信息
+              await tokenStore.selectToken(token.id);
+              // 等待1秒确保信息已获取
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              // 断开连接
+              tokenStore.closeWebSocketConnection(token.id);
+            }
+
             successCount++;
+            message.success(`Token "${token.name}" 刷新成功`);
           } catch (error) {
             console.error(`刷新Token "${token.name}" 失败:`, error);
             failCount++;
+            message.error(`Token "${token.name}" 刷新失败: ${error.message}`);
+          }
+
+          // 添加短暂延迟，避免服务器压力过大
+          if (i < tokenStore.gameTokens.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
           }
         }
 
@@ -1358,19 +1052,14 @@ const refreshAllTokens = async () => {
 
         // 显示结果
         if (failCount === 0) {
-          message.success(`批量刷新完成！成功刷新 ${successCount} 个Token`);
+          message.success(`所有Token刷新完成！成功刷新 ${successCount} 个Token`);
         } else {
           message.warning(
-            `批量刷新完成，成功 ${successCount} 个，失败 ${failCount} 个`,
+            `Token刷新完成，成功 ${successCount} 个，失败 ${failCount} 个`,
           );
         }
-
-        // 如果有手动导入的Token，提示用户
-        if (manualTokens.length > 0) {
-          message.info(`${manualTokens.length} 个手动导入的Token需要手动刷新`);
-        }
       } catch (error) {
-        message.error("批量刷新过程中发生错误: " + error.message);
+        message.error("刷新过程中发生错误: " + error.message);
       }
     },
   });
@@ -1404,21 +1093,21 @@ const handleBulkAction = (key) => {
 
 // 清除选中的Token
 const clearSelectedTokens = async () => {
-  if (selectedTokenIds.value.length === 0) {
+  if (checkedRowKeys.value.length === 0) {
     message.warning('请先选择要删除的Token');
     return;
   }
   
   dialog.warning({
     title: '确认删除',
-    content: `确定要删除选中的 ${selectedTokenIds.value.length} 个Token吗？`,
+    content: `确定要删除选中的 ${checkedRowKeys.value.length} 个Token吗？`,
     positiveText: '删除',
     negativeText: '取消',
     onPositiveClick: async () => {
-      for (const id of selectedTokenIds.value) {
+      for (const id of checkedRowKeys.value) {
         await tokenStore.removeToken(id);
       }
-      selectedTokenIds.value = [];
+      checkedRowKeys.value = [];
       message.success('已删除选中的Token');
     }
   });
@@ -1587,7 +1276,7 @@ const goToDashboard = () => {
 };
 
 const goHome = () => {
-  router.push("/");
+  router.push("/admin/dashboard");
 };
 
 // 开始任务管理 - 直接跳转到控制台
@@ -1719,41 +1408,67 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-.token-import-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
-  padding: var(--spacing-xl) 0;
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  background-color: #FFFFFF;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  margin: 20px;
 }
 
-/* 深色主题下的页面背景 */
-[data-theme="dark"] .token-import-page {
-  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
+.empty-icon {
+  font-size: 64px;
+  color: #4F46E5;
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.empty-btn {
+  min-width: 160px;
+  height: 40px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.token-import-page {
+  /* No background/padding - layout provides bg-gray-100 and p-6 */
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 var(--spacing-lg);
 }
 
 .page-header {
   text-align: center;
-  margin-bottom: var(--spacing-2xl);
+  margin-bottom: 24px;
 }
 
 .header-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-md);
-  color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  gap: 12px;
+  color: #111827;
 }
 
 .header-top {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 12px;
   position: relative;
   width: 100%;
   justify-content: center;
@@ -1762,31 +1477,580 @@ onUnmounted(() => {
 .theme-toggle {
   position: absolute;
   right: 0;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background-color: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
 }
 
 .brand-logo {
   width: 64px;
   height: 64px;
-  border-radius: var(--border-radius-medium);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .header-content h1 {
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
+  font-size: 1.875rem;
+  font-weight: 600;
   margin: 0;
-  color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  color: #4F46E5;
+  letter-spacing: 0.5px;
 }
 
 .header-content p {
-  font-size: var(--font-size-lg);
+  font-size: 1.125rem;
   margin: 0;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  color: #6B7280;
+}
+
+.import-section {
+  margin-bottom: 24px;
+}
+
+.import-card {
+  background: #FFFFFF;
+  border-radius: 0.75rem;
+  padding: 32px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  max-width: 600px;
+  margin: 0 auto;
+  border: 1px solid #E5E7EB;
+}
+
+.card-header {
+  text-align: center;
+  margin-bottom: 24px;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #111827;
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: #6B7280;
+    margin: 0 0 16px 0;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #9CA3AF;
+    margin: 0;
+    font-weight: 400;
+  }
+
+  .import-method-tabs {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+  }
+}
+
+.form-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-tip {
+  color: #9CA3AF;
+  font-size: 13px;
+}
+
+.cors-tip {
+  color: #D97706;
+  font-weight: 500;
+}
+
+.connection-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.optional-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.tokens-section {
+  background: #FFFFFF;
+  border-radius: 0.75rem;
+  padding: 24px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 顶部导航按钮 */
+.tokens-navbar {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.nav-card-btn {
+  height: 48px;
+  width: 130px;
+  padding: 0 16px;
+  font-size: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 操作工具栏 */
+.tokens-toolbar {
+  margin-bottom: 16px;
+}
+
+.toolbar-right {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Token列表 groupbox */
+.tokens-groupbox {
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.5rem;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.groupbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  h2 {
+    color: #111827;
+    font-size: 15px;
+    margin: 0;
+  }
+}
+
+.section-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #FFFFFF;
+  padding: 20px;
+  border-bottom: 1px solid #E5E7EB;
+  border-radius: 0.5rem 0.5rem 0 0;
+
+  h2 {
+    color: #111827;
+    font-size: 1.25rem;
+    margin: 0;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 16px;
+  max-width: 100%;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+
+.tokens-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #D1D5DB #F3F4F6;
+  flex: 1;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #F3F4F6;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #D1D5DB;
+    border-radius: 3px;
+  }
+}
+
+.token-card {
+  border: 2px solid #E5E7EB;
+  border-radius: 0.5rem;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #FFFFFF;
+
+  &:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+
+  &.active {
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+  }
+
+  &.connected {
+    border-left: 4px solid #059669;
+  }
+}
+
+.tokens-list {
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #D1D5DB #F3F4F6;
+  flex: 1;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #F3F4F6;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #D1D5DB;
+    border-radius: 3px;
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.token-info {
+  flex: 1;
+}
+
+.token-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.token-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  background: #F3F4F6;
+  color: #6B7280;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.card-body {
+  margin-bottom: 16px;
+}
+
+.token-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 8px;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+
+.token-label {
+  color: #6B7280;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.token-value {
+  font-family: monospace;
+  font-size: 13px;
+  color: #111827;
+  flex: 1;
+}
+
+.connection-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9CA3AF;
+
+  &.connected {
+    background: #059669;
+  }
+
+  &.connecting {
+    background: #D97706;
+  }
+
+  &.error {
+    background: #DC2626;
+  }
+}
+
+.status-text {
+  font-size: 13px;
+  color: #6B7280;
+}
+
+.token-remark {
+  margin: 8px 0;
+  padding: 8px;
+  background: #F9FAFB;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+
+  &:hover {
+    background: #F3F4F6;
+  }
+}
+
+.token-remark-edit {
+  cursor: default;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+
+  &:hover {
+    background: #FFFFFF;
+  }
+}
+
+.remark-label {
+  font-weight: 500;
+  margin-right: 4px;
+  color: #111827;
+  flex-shrink: 0;
+}
+
+.remark-value {
+  font-style: italic;
+  flex: 1;
+}
+
+.token-timestamps {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.timestamp-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timestamp-label {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.timestamp-value {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.card-footer {
+  border-top: 1px solid #F3F4F6;
+  padding-top: 16px;
+}
+
+/* 连接状态指示器样式 */
+.connection-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: 4px;
+  position: relative;
+
+  &.connected {
+    background-color: #10b981;
+    animation: pulse-green 2s infinite;
+  }
+
+  &.connecting {
+    background-color: #f59e0b;
+    animation: pulse-yellow 1s infinite;
+  }
+
+  &.disconnected {
+    background-color: #6b7280;
+  }
+
+  &.error {
+    background-color: #ef4444;
+    animation: pulse-red 1s infinite;
+  }
+}
+
+.connection-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+
+  &.connected {
+    color: #059669;
+    background-color: rgba(5, 150, 105, 0.1);
+  }
+
+  &.connecting {
+    color: #D97706;
+    background-color: rgba(217, 119, 6, 0.1);
+  }
+
+  &.disconnected {
+    color: #6B7280;
+    background-color: rgba(107, 114, 128, 0.1);
+  }
+
+  &.error {
+    color: #DC2626;
+    background-color: rgba(220, 38, 38, 0.1);
+  }
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes pulse-yellow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background: #FFFFFF;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  .tokens-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .optional-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .token-timestamps {
+    flex-direction: column;
+  }
+
+  .storage-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* 存储信息样式 */
+.storage-info {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #F3F4F6;
+}
+
+.storage-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.storage-label {
+  font-size: 13px;
+  color: #6B7280;
+  font-weight: 500;
+  min-width: 70px;
+}
+
+.storage-upgrade {
+  margin-top: 4px;
 }
 
 .import-section {
@@ -1857,60 +2121,6 @@ onUnmounted(() => {
   align-items: center;
 }
 
-/* 深色主题强制覆盖（与全局 data-theme 保持一致） */
-[data-theme="dark"] .n-form-item-label,
-[data-theme="dark"] .n-form-item-label__text {
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .n-input__input,
-[data-theme="dark"] .n-input__textarea {
-  color: #ffffff !important;
-  background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-[data-theme="dark"] .n-input__placeholder {
-  color: rgba(255, 255, 255, 0.5) !important;
-}
-
-[data-theme="dark"] .n-card {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .import-card {
-  background: rgba(45, 55, 72, 0.9) !important;
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .import-card h2 {
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .import-card .subtitle {
-  color: rgba(255, 255, 255, 0.7) !important;
-}
-
-[data-theme="dark"] .n-collapse-item__header {
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .n-collapse-item__content-wrapper {
-  background-color: transparent !important;
-}
-
-[data-theme="dark"] .n-radio-button {
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .n-radio-button--checked {
-  background-color: rgba(16, 185, 129, 0.8) !important;
-  color: #ffffff !important;
-}
-
-[data-theme="dark"] .form-tip {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
 
 .optional-fields {
   display: grid;
@@ -1932,25 +2142,68 @@ onUnmounted(() => {
   box-shadow: var(--shadow-medium);
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - var(--spacing-2xl) * 4);
+  gap: var(--spacing-lg);
 }
 
-/* 深色主题下的列表区域背景 */
-[data-theme="dark"] .tokens-section {
-  background: rgba(45, 55, 72, 0.9);
-  color: #ffffff;
+/* 顶部导航按钮 - 在框框外部 */
+.tokens-navbar {
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  justify-content: flex-start;
 }
 
-/* 深色主题下的固定头部 */
-[data-theme="dark"] .section-header {
-  background: rgba(45, 55, 72, 0.9);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+.nav-card-btn {
+  height: 48px;
+  width: 130px;
+  padding: 0 16px;
+  font-size: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 操作工具栏 - 靠右对齐 */
+.tokens-toolbar {
+  margin-bottom: var(--spacing-md);
+}
+
+.toolbar-right {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+/* Token列表 groupbox */
+.tokens-groupbox {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* groupbox 头部 */
+.groupbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+
+  h2 {
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    margin: 0;
+  }
 }
 
 .section-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
   position: sticky;
   top: 0;
@@ -2380,11 +2633,4 @@ onUnmounted(() => {
   margin-top: var(--spacing-xs);
 }
 
-:global([data-theme="dark"] .token-import-modal .arco-modal) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-}
-
-[data-theme="dark"] .token-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
 </style>

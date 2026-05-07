@@ -245,18 +245,10 @@ const savePreferences = () => {
 const updateTheme = (theme) => {
   preferences.theme = theme;
   localStorage.setItem("theme", theme);
-  if (theme === "dark") {
-    document.documentElement.setAttribute("data-theme", "dark");
-  } else if (theme === "light") {
-    document.documentElement.removeAttribute("data-theme");
-  } else {
-    const prefersDark =
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (prefersDark)
-      document.documentElement.setAttribute("data-theme", "dark");
-    else document.documentElement.removeAttribute("data-theme");
-  }
+  // Light mode only - dark mode removed
+  document.documentElement.removeAttribute("data-theme");
+  document.documentElement.classList.remove("dark");
+  document.body.classList.remove("dark");
 };
 
 const changeAvatar = () => {

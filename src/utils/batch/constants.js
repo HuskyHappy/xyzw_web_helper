@@ -64,6 +64,12 @@ export const availableTasks = [
   { label: "一键领取蟠桃园任务", value: "batchClaimPeachTasks" },
   { label: "一键扫荡灯神", value: "batchGenieSweep" },
   { label: "一键购买梦境商品", value: "batchBuyDreamItems" },
+  { label: "一键江湖黑市采购", value: "blackMarket_purchase" },
+  { label: "周常免费礼包", value: "weeklyFreeGift" },
+  { label: "周一免费礼", value: "mondayFreeGift" },
+  { label: "免费扭蛋", value: "gachaFreeDrawWeekly" },
+  { label: "预约直播", value: "batchPkRoomAppoint" },
+  { label: "一键十殿星级挑战", value: "batchStarChallenge" },
 ];
 
 // 车辆研究消耗表
@@ -150,6 +156,8 @@ export const defaultBatchSettings = {
   smartDepartureJadeThreshold: 0,
   smartDepartureTicketThreshold: 0,
   smartDepartureMatchAll: false,
+  // 江湖黑市采购商品列表 (goodsIndex 数组)
+  blackMarketPurchaseList: [],
 };
 
 // 默认模板

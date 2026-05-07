@@ -544,11 +544,81 @@ export function createTasksHangUp(deps) {
     message.success("批量助威结束");
   };
 
+  /**
+   * 预约直播
+   */
+  const batchPkRoomAppoint = async () => {
+    if (selectedTokens.value.length === 0) return;
+
+    isRunning.value = true;
+    shouldStop.value = false;
+
+    const taskPromises = selectedTokens.value.map(async (tokenId) => {
+      if (shouldStop.value) return;
+
+      tokenStatus.value[tokenId] = "running";
+      currentRunningTokenId.value = tokenId;
+
+      const token = tokens.value.find((t) => t.id === tokenId);
+
+      try {
+        await ensureConnection(tokenId);
+        const result = await tokenStore.sendMessageWithPromise(tokenId, "pkroom_appoint", {}, 5000);
+
+        // 已经预约过视为完成
+        if (result && (result.error === "已经预约" || result.code === 7300236)) {
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            message: `${token.name} 已经预约过直播`,
+            type: "warning",
+          });
+        } else if (result && !result.error) {
+          const roomId = result.role?.statistics?.["pk:appoint:room:id"];
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            message: `${token.name} 预约直播成功${roomId ? ` (房间${roomId})` : ""}`,
+            type: "success",
+          });
+        } else {
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            message: `${token.name} 预约直播失败: ${result?.error || result?.msg || "未知错误"}`,
+            type: "error",
+          });
+        }
+      } catch (err) {
+        const errMsg = String(err.message || err);
+        if (errMsg.includes("已经预约") || errMsg.includes("7300236")) {
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            message: `${token.name} 已经预约过直播`,
+            type: "warning",
+          });
+        } else {
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            message: `${token.name} 预约直播异常: ${errMsg}`,
+            type: "error",
+          });
+        }
+      } finally {
+        tokenStore.closeWebSocketConnection(tokenId);
+        releaseConnectionSlot();
+      }
+    });
+
+    await Promise.all(taskPromises);
+    isRunning.value = false;
+    currentRunningTokenId.value = null;
+    message.success("预约直播结束");
+  };
+
   return {
     claimHangUpRewards,
     batchAddHangUpTime,
     batchStudy,
     batchclubsign,
     batchWarGuessCheer,
+    batchPkRoomAppoint,
   };
 }

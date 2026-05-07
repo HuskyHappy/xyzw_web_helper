@@ -1133,36 +1133,36 @@ watch(
 
 <style scoped>
 .message-tester {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
 .message-item {
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  border-radius: 0.5rem;
 }
 
 .message-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 /* 优化滚动条样式 */
 .message-history::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .message-history::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background-color: #F3F4F6;
+  border-radius: 3px;
 }
 
 .message-history::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background-color: #D1D5DB;
+  border-radius: 3px;
 }
 
 .message-history::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background-color: #9CA3AF;
 }
 
 /* 优化代码块样式 */

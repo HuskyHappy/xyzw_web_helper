@@ -208,9 +208,37 @@ export const useTokenStore = defineStore("tokens", () => {
 
   // Token管理
   const addToken = async (tokenData: TokenData) => {
-    let id =
-      tokenData.id ||
-      `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // 检查是否已存在相同名称的token，如果有则覆盖更新
+    const existingIndex = gameTokens.value.findIndex((t) => t.name === tokenData.name);
+
+    if (existingIndex !== -1) {
+      // 存在相同名称的token，更新现有token
+      const existingToken = gameTokens.value[existingIndex];
+      const updatedToken = {
+        ...existingToken,
+        ...tokenData,
+        id: existingToken.id, // 保留原有的id
+        createdAt: existingToken.createdAt, // 保留原有创建时间
+        lastUsed: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      gameTokens.value[existingIndex] = updatedToken;
+
+      // 同步到 Supabase
+      try {
+        await tokenApi.update(existingToken.id, updatedToken);
+        tokenLogger.info(`Token 已更新: ${updatedToken.name}`);
+      } catch (err) {
+        tokenLogger.warn('Supabase 更新失败:', err);
+        console.error('Supabase 更新失败详情:', err?.response?.data || err?.message || err);
+      }
+
+      return updatedToken;
+    }
+
+    // 不存在相同名称的token，创建新token
+    let id = tokenData.id || `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const newToken = {
       id: id,
       name: tokenData.name,
@@ -230,16 +258,23 @@ export const useTokenStore = defineStore("tokens", () => {
       avatar: tokenData.avatar || "", // 用户头像
     };
 
-    gameTokens.value.push(newToken);
-    
-    // 同步到 Supabase
+    // 先同步到 Supabase，成功后再写入本地
     try {
-      await tokenApi.create(newToken);
+      const result = await tokenApi.create(newToken);
       tokenLogger.info(`Token 已同步到 Supabase: ${newToken.name}`);
+      // 如果 Supabase 返回了数据（含 created_at 等服务端字段），合并到本地
+      if (result && Array.isArray(result) && result[0]) {
+        const serverToken = result[0];
+        newToken.createdAt = serverToken.createdAt || serverToken.created_at || newToken.createdAt;
+      }
     } catch (err) {
-      tokenLogger.warn('Supabase 同步失败:', err);
+      const errMsg = err?.response?.data?.error || err?.message || String(err);
+      tokenLogger.error('Supabase 同步失败:', errMsg);
+      console.error('Supabase 同步失败详情:', err?.response?.data || err?.message || err);
+      // 仍然写入本地，但抛出错误让调用者知道
     }
-    
+
+    gameTokens.value.push(newToken);
     return newToken;
   };
 
@@ -284,6 +319,14 @@ export const useTokenStore = defineStore("tokens", () => {
 
     // 同时删除IndexedDB中的数据
     await deleteArrayBuffer(tokenId);
+
+    // 同步删除 Supabase 中的数据
+    try {
+      await tokenApi.delete(tokenId);
+      tokenLogger.info(`Token 已从 Supabase 删除: ${tokenId}`);
+    } catch (err) {
+      tokenLogger.warn('Supabase 删除失败:', err);
+    }
 
     return true;
   };
@@ -1443,12 +1486,15 @@ export const useTokenStore = defineStore("tokens", () => {
     try {
       // 从 Supabase 加载 tokens
       const tokens = await tokenApi.getAll();
-      if (tokens && Array.isArray(tokens)) {
+      if (tokens && Array.isArray(tokens) && tokens.length > 0) {
         gameTokens.value = tokens.map(t => ({
           ...t,
           lastRefreshed: t.lastRefreshed ? new Date(t.lastRefreshed).getTime() : undefined,
         }));
         tokenLogger.info(`从 Supabase 加载了 ${tokens.length} 个 tokens`);
+      } else {
+        // Supabase 没有数据，保持本地数据
+        tokenLogger.info('Supabase 无数据，保持本地 tokens');
       }
     } catch (err) {
       tokenLogger.warn('从 Supabase 加载 tokens 失败，使用本地数据:', err);

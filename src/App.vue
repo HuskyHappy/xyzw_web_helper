@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="naiveTheme">
+  <n-config-provider :theme="null" :theme-overrides="themeOverrides">
     <n-message-provider>
       <n-loading-bar-provider>
         <n-notification-provider>
@@ -15,201 +15,121 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted } from "vue";
-import { darkTheme } from "naive-ui";
-import { useTheme } from "@/composables/useTheme";
+import { reactive } from "vue";
 
-const { isDark, initTheme, setupSystemThemeListener, updateReactiveState } =
-  useTheme();
-
-// Naive UI 主题
-const naiveTheme = computed(() => {
-  return isDark.value ? darkTheme : null;
-});
-
-// 监听主题变化事件
-const handleThemeChange = () => {
-  // 确保响应式状态同步
-  updateReactiveState();
-  // 强制重新渲染
-  setTimeout(() => {
-    updateReactiveState();
-  }, 50);
-};
-
-onMounted(() => {
-  initTheme();
-  setupSystemThemeListener();
-
-  // 监听自定义主题变化事件
-  window.addEventListener("theme-change", handleThemeChange);
-
-  // 初始化时更新状态
-  updateReactiveState();
-});
-
-onUnmounted(() => {
-  window.removeEventListener("theme-change", handleThemeChange);
+// Naive UI 主题覆盖 - 统一为 Tailwind Dashboard 风格
+const themeOverrides = reactive({
+  common: {
+    primaryColor: "#4F46E5",
+    primaryColorHover: "#4338CA",
+    primaryColorPressed: "#3730A3",
+    primaryColorSuppl: "#4F46E5",
+    borderRadius: "0.5rem",
+    borderRadiusSmall: "0.375rem",
+    fontFamily:
+      '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif',
+    fontSize: "14px",
+    fontSizeMedium: "14px",
+    fontSizeLarge: "16px",
+    heightMedium: "40px",
+    heightLarge: "44px",
+  },
+  Card: {
+    borderRadius: "0.5rem",
+    paddingMedium: "20px",
+    titleFontSizeMedium: "16px",
+    titleFontWeight: "600",
+    borderColor: "#E5E7EB",
+  },
+  Button: {
+    borderRadiusMedium: "0.375rem",
+    borderRadiusSmall: "0.25rem",
+    borderRadiusLarge: "0.5rem",
+    heightMedium: "38px",
+    fontSizeMedium: "14px",
+    fontWeight: "500",
+  },
+  DataTable: {
+    borderColor: "#E5E7EB",
+    thColor: "#F9FAFB",
+    thTextColor: "#374151",
+    tdTextColor: "#4B5563",
+    thFontWeight: "600",
+    borderRadius: "0.5rem",
+    fontSizeMedium: "14px",
+  },
+  Modal: {
+    borderRadius: "0.75rem",
+    titleFontSize: "18px",
+    titleFontWeight: "600",
+  },
+  Input: {
+    borderRadius: "0.375rem",
+    heightMedium: "38px",
+    borderFocus: "1px solid #4F46E5",
+    borderHover: "1px solid #A5B4FC",
+    boxShadowFocus: "0 0 0 2px rgba(79, 70, 229, 0.15)",
+  },
+  Select: {
+    borderRadius: "0.375rem",
+    heightMedium: "38px",
+    peers: {
+      InternalSelection: {
+        borderRadius: "0.375rem",
+        heightMedium: "38px",
+      },
+    },
+  },
+  Tag: {
+    borderRadius: "9999px",
+  },
+  Tabs: {
+    tabTextColorLine: "#6B7280",
+    tabTextColorActiveLine: "#4F46E5",
+    tabTextColorHoverLine: "#374151",
+    barColor: "#4F46E5",
+  },
+  Menu: {
+    itemTextColor: "#D1D5DB",
+    itemTextColorActive: "#FFFFFF",
+    itemTextColorHover: "#F9FAFB",
+    itemTextColorChildActive: "#FFFFFF",
+    itemColorActive: "#4F46E5",
+    itemColorHover: "rgba(255, 255, 255, 0.08)",
+    arrowColor: "#9CA3AF",
+    arrowColorHover: "#FFFFFF",
+    arrowColorActive: "#FFFFFF",
+    arrowColorChildActive: "#FFFFFF",
+    borderRadius: "0.5rem",
+  },
+  Drawer: {
+    borderRadius: "0",
+  },
 });
 </script>
 
 <style>
 /* 主题变量 */
 :root {
-  --app-background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
-  --text-color: #333;
-  --text-secondary: #666;
-  --text-tertiary: #999;
+  --app-background: #F3F4F6;
+  --text-color: #111827;
+  --text-secondary: #6B7280;
+  --text-tertiary: #9CA3AF;
   --bg-color: #ffffff;
-  --border-color: #e0e0e0;
-}
-
-/* 深色主题变量 */
-.dark {
-  --app-background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
-  --text-color: #ffffff !important;
-  --text-secondary: #cbd5e0 !important;
-  --text-tertiary: #a0aec0 !important;
-  --bg-color: #1a202c !important;
-  --border-color: #4a5568 !important;
-}
-
-/* 深色主题样式优化 - 针对Naive UI组件 */
-html.dark,
-html[data-theme="dark"] {
-  color-scheme: dark;
-}
-
-/* 全局深色主题文字颜色 */
-html.dark *,
-html[data-theme="dark"] * {
-  color: #ffffff;
-}
-
-/* Naive UI 表单组件 */
-html.dark .n-form-item-label,
-html.dark .n-form-item-label__text,
-html[data-theme="dark"] .n-form-item-label,
-html[data-theme="dark"] .n-form-item-label__text {
-  color: #ffffff !important;
-}
-
-/* Naive UI 输入组件 */
-html.dark .n-input,
-html.dark .n-input__input,
-html.dark .n-input__textarea,
-html[data-theme="dark"] .n-input,
-html[data-theme="dark"] .n-input__input,
-html[data-theme="dark"] .n-input__textarea {
-  color: #ffffff !important;
-  background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Naive UI 弹框组件 */
-html.dark .n-modal,
-html.dark .n-drawer,
-html.dark .n-popover,
-html.dark .n-dropdown,
-html.dark .n-tooltip,
-html.dark .n-dialog,
-html[data-theme="dark"] .n-modal,
-html[data-theme="dark"] .n-drawer,
-html[data-theme="dark"] .n-popover,
-html[data-theme="dark"] .n-dropdown,
-html[data-theme="dark"] .n-tooltip,
-html[data-theme="dark"] .n-dialog {
-  color: #ffffff !important;
-}
-
-/* Naive UI 弹框内容 */
-html.dark .n-modal .n-card,
-html.dark .n-drawer-content,
-html.dark .n-popover-content,
-html.dark .n-dropdown-option,
-html.dark .n-dialog__content,
-html[data-theme="dark"] .n-modal .n-card,
-html[data-theme="dark"] .n-drawer-content,
-html[data-theme="dark"] .n-popover-content,
-html[data-theme="dark"] .n-dropdown-option,
-html[data-theme="dark"] .n-dialog__content {
-  color: #ffffff !important;
-}
-
-/* Naive UI 下拉选项 */
-html.dark .n-dropdown-option__label,
-html.dark .n-select-option,
-html.dark .n-menu-item-content,
-html[data-theme="dark"] .n-dropdown-option__label,
-html[data-theme="dark"] .n-select-option,
-html[data-theme="dark"] .n-menu-item-content {
-  color: #ffffff !important;
-}
-
-/* 其他组件 */
-html.dark .n-collapse-item__header,
-html.dark .n-radio-button,
-html.dark .n-card,
-html.dark .n-card__content,
-html.dark .n-button,
-html.dark .n-tag,
-html[data-theme="dark"] .n-collapse-item__header,
-html[data-theme="dark"] .n-radio-button,
-html[data-theme="dark"] .n-card,
-html[data-theme="dark"] .n-card__content,
-html[data-theme="dark"] .n-button,
-html[data-theme="dark"] .n-tag {
-  color: #ffffff !important;
-}
-
-/* 标题和文本 */
-html.dark h1,
-html.dark h2,
-html.dark h3,
-html.dark h4,
-html.dark h5,
-html.dark h6,
-html.dark p,
-html.dark span,
-html.dark div,
-html.dark label,
-html[data-theme="dark"] h1,
-html[data-theme="dark"] h2,
-html[data-theme="dark"] h3,
-html[data-theme="dark"] h4,
-html[data-theme="dark"] h5,
-html[data-theme="dark"] h6,
-html[data-theme="dark"] p,
-html[data-theme="dark"] span,
-html[data-theme="dark"] div,
-html[data-theme="dark"] label {
-  color: #ffffff !important;
-}
-
-/* 占位符文本 */
-html.dark .n-input__placeholder,
-html.dark ::placeholder,
-html[data-theme="dark"] .n-input__placeholder,
-html[data-theme="dark"] ::placeholder {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-/* 确保Portal渲染的组件也应用深色主题 */
-body.dark .n-modal-container,
-body.dark .n-drawer-container,
-body.dark .n-popover-container,
-body[data-theme="dark"] .n-modal-container,
-body[data-theme="dark"] .n-drawer-container,
-body[data-theme="dark"] .n-popover-container {
-  color: #ffffff !important;
+  --border-color: #E5E7EB;
+  --sidebar-bg: #111827;
+  --sidebar-width: 256px;
+  --sidebar-item-active: #4F46E5;
+  --header-height: 64px;
+  --header-bg: #FFFFFF;
+  --primary-color: #4F46E5;
+  --primary-color-light: #EEF2FF;
 }
 
 #app {
   min-height: 100vh;
   background: var(--app-background);
   color: var(--text-color);
-  transition:
-    background 0.3s ease,
-    color 0.3s ease;
 }
 
 /* 全局样式重置 */
@@ -235,7 +155,7 @@ body {
     Arial,
     sans-serif;
   color: var(--text-color);
-  transition: color 0.3s ease;
+  background-color: var(--app-background);
 }
 
 /* 滚动条样式 */
@@ -245,16 +165,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: #F3F4F6;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: #D1D5DB;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: #9CA3AF;
 }
 </style>

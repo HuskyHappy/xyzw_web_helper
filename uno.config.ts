@@ -9,17 +9,24 @@ export default defineConfig({
   shortcuts: [
     {
       // 按钮基础样式
-      btn: "px-4 py-2 rounded inline-block",
-      "btn-primary": "btn bg-blue-500 text-white hover:bg-blue-700",
-      "btn-secondary": "btn bg-gray-500 text-white hover:bg-gray-700",
-      "btn-danger": "btn bg-red-500 text-white hover:bg-red-700",
+      btn: "px-4 py-2 rounded-md inline-block font-medium text-sm",
+      "btn-primary": "btn bg-indigo-600 text-white hover:bg-indigo-700",
+      "btn-secondary": "btn bg-gray-100 text-gray-700 hover:bg-gray-200",
+      "btn-danger": "btn bg-red-600 text-white hover:bg-red-700",
 
       // 布局组件
       "flex-center": "flex items-center justify-center",
       "grid-basic": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
 
       // 卡片系列
-      card: "bg-white rounded-lg shadow p-4",
+      card: "bg-white rounded-lg shadow-sm p-4",
+      "dashboard-card": "bg-white rounded-lg shadow-sm p-6",
+
+      // 侧边栏
+      "sidebar-item":
+        "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors duration-150",
+      "sidebar-item-active":
+        "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white",
     },
     [/^i-ad:(.*)$/, (p) => `i-ant-design:${p[1]}`],
     [/^i-c:(.*)$/, (p) => `i-carbon:${p[1]}`],
@@ -54,11 +61,6 @@ export default defineConfig({
         console.log("meta:", meta);
         console.log("css:", css);
         return css;
-        // 解决图标前缀问题
-        // if (meta.body.includes("i-")) {
-        //   return css.replace(/i-([a-z]+):/g, "i-$1:");
-        // }
-        // return css;
       },
     }),
   ],

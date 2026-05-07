@@ -168,13 +168,42 @@
                   align-items: center;
                 "
               >
-                <n-button
-                  type="info"
-                  size="small"
-                  @click="showGroupManageModal = true"
-                >
-                  管理分组
-                </n-button>
+                <n-space size="small">
+                  <n-button
+                    type="info"
+                    size="small"
+                    @click="showGroupManageModal = true"
+                  >
+                    管理分组
+                  </n-button>
+                  <n-button
+                    type="warning"
+                    size="small"
+                    :disabled="selectedTokens.length === 0"
+                    :loading="isRefreshingTokens"
+                    @click="refreshSelectedTokenInfo"
+                  >
+                    刷新Token
+                  </n-button>
+                  <n-button
+                    type="success"
+                    size="small"
+                    :disabled="selectedTokens.length === 0"
+                    :loading="isBatchConnecting"
+                    @click="batchConnectSelected"
+                  >
+                    批量连接
+                  </n-button>
+                  <n-button
+                    type="error"
+                    size="small"
+                    :disabled="selectedTokens.length === 0"
+                    :loading="isBatchDisconnecting"
+                    @click="batchDisconnectSelected"
+                  >
+                    批量断开
+                  </n-button>
+                </n-space>
                 <span
                   v-if="selectedGroups.length > 0"
                   style="font-size: 12px; color: #86909c"
@@ -393,6 +422,20 @@
                 >
                   一键灯神扫荡
                 </n-button>
+                <n-button
+                  size="small"
+                  @click="batchPkRoomAppoint"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  预约直播
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="gachaFreeDrawWeekly"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  免费扭蛋
+                </n-button>
               </n-space>
             </n-tab-pane>
             <n-tab-pane name="dungeon" tab="副本">
@@ -439,6 +482,13 @@
                   "
                 >
                   一键购买梦境商品
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="batchStarChallenge"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  一键十殿星级挑战
                 </n-button>
               </n-space>
             </n-tab-pane>
@@ -514,6 +564,20 @@
                 >
                   一键领取怪异塔免费道具
                 </n-button>
+                <n-button
+                  size="small"
+                  @click="weeklyFreeGift"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  周常免费礼包
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="mondayFreeGift"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  周一免费礼
+                </n-button>
               </n-space>
             </n-tab-pane>
             <n-tab-pane name="resource" tab="资源">
@@ -587,6 +651,21 @@
                   :disabled="isRunning || selectedTokens.length === 0"
                 >
                   一键购买俱乐部5皮肤币
+                </n-button>
+                <n-button
+                  size="small"
+                  @click="blackMarket_purchase"
+                  :disabled="isRunning || selectedTokens.length === 0"
+                >
+                  一键江湖黑市采购
+                </n-button>
+                <n-button
+                  size="small"
+                  quaternary
+                  type="info"
+                  @click="showBlackMarketBuyModal = true"
+                >
+                  ⚙ 黑市配置
                 </n-button>
               </n-space>
             </n-tab-pane>
@@ -2799,6 +2878,44 @@
         </div>
       </div>
     </n-modal>
+
+    <!-- 江湖黑市采购配置弹窗 -->
+    <n-modal
+      v-model:show="showBlackMarketBuyModal"
+      preset="card"
+      title="江湖黑市采购配置"
+      style="width: 500px; max-width: 90%"
+    >
+      <div style="margin-bottom: 12px">
+        <n-space align="center">
+          <n-tag :type="isBlackMarketWeek() ? 'success' : 'error'" size="small">
+            {{ isBlackMarketWeek() ? '黑市周 - 可购买' : '非黑市周 - 无法购买' }}
+          </n-tag>
+          <span style="font-size: 12px; color: #999">
+            当前活动周: {{ getActivityWeek() || '未知' }}
+          </span>
+        </n-space>
+      </div>
+      <n-checkbox-group v-model:value="blackMarketBuyList">
+        <n-space vertical>
+          <n-checkbox
+            v-for="item in blackMarketGoods"
+            :key="item.goodsIndex"
+            :value="item.goodsIndex"
+            :label="`${item.name} - ${item.desc}`"
+          />
+        </n-space>
+      </n-checkbox-group>
+      <template #footer>
+        <n-space justify="space-between">
+          <n-space>
+            <n-button size="small" @click="selectAllBlackMarketItems">全选</n-button>
+            <n-button size="small" @click="clearAllBlackMarketItems">清空</n-button>
+          </n-space>
+          <n-button type="primary" @click="saveBlackMarketBuyConfig">保存</n-button>
+        </n-space>
+      </template>
+    </n-modal>
   </div>
 </template>
 
@@ -2875,11 +2992,14 @@ import {
   createTasksLegacy,
 } from "@/utils/batch";
 
-import { merchantConfig, goldItemsConfig } from "@/utils/dreamConstants";
+import { merchantConfig, goldItemsConfig, blackMarketGoods } from "@/utils/dreamConstants";
+import { getActivityWeek, isBlackMarketWeek } from "@/utils/DateTimeUtils";
+import { useDialog } from "naive-ui";
 
 // Initialize token store, message service, and task runner
 const tokenStore = useTokenStore();
 const message = useMessage();
+const dialog = useDialog();
 
 // 排序配置（从localStorage读取，与TokenImport共享）
 const savedSortConfig = localStorage.getItem("tokenSortConfig");
@@ -3483,6 +3603,8 @@ const taskGroupDefinitions = [
       "store_purchase",
       "collection_claimfreereward",
       "batchGenieSweep",
+      "batchPkRoomAppoint",
+      "gachaFreeDrawWeekly",
     ],
   },
   {
@@ -3494,6 +3616,7 @@ const taskGroupDefinitions = [
       "skinChallenge",
       "batchClaimPeachTasks",
       "batchBuyDreamItems",
+      "batchStarChallenge",
     ],
   },
   { name: "baoku", label: "宝库", tasks: ["batchbaoku13", "batchbaoku45"] },
@@ -3505,6 +3628,8 @@ const taskGroupDefinitions = [
       "batchUseItems",
       "batchMergeItems",
       "batchClaimFreeEnergy",
+      "weeklyFreeGift",
+      "mondayFreeGift",
     ],
   },
   {
@@ -3517,6 +3642,7 @@ const taskGroupDefinitions = [
       "batchFish",
       "batchRecruit",
       "legion_storebuygoods",
+      "blackMarket_purchase",
     ],
   },
   {
@@ -5708,6 +5834,7 @@ const {
   batchStudy,
   batchclubsign,
   batchWarGuessCheer,
+  batchPkRoomAppoint,
 } = tasksHangUp;
 
 const tasksBottle = createTasksBottle(createTaskDeps());
@@ -5721,6 +5848,9 @@ const {
   skinChallenge,
   batchUseItems,
   batchMergeItems,
+  gachaFreeDrawWeekly,
+  mondayFreeGift,
+  batchStarChallenge,
 } = tasksTower;
 
 const tasksCar = createTasksCar(createTaskDeps());
@@ -5753,10 +5883,222 @@ const {
   legionStoreBuySkinCoins,
   store_purchase,
   collection_claimfreereward,
+  weeklyFreeGift,
+  blackMarket_purchase,
 } = tasksStore;
 
 const tasksLegacy = createTasksLegacy(createTaskDeps());
 const { batchLegacyClaim, batchLegacyGiftSendEnhanced } = tasksLegacy;
+
+// ==================== 批量连接/断开/刷新Token ====================
+
+const BATCH_CONNECT_MAX_CONCURRENT = 20;
+const isBatchConnecting = ref(false);
+const isBatchDisconnecting = ref(false);
+const isRefreshingTokens = ref(false);
+
+const batchConnectQueue = { active: 0 };
+
+const waitForBatchConnectSlot = async () => {
+  while (batchConnectQueue.active >= BATCH_CONNECT_MAX_CONCURRENT) {
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  batchConnectQueue.active++;
+};
+
+const releaseBatchConnectSlot = () => {
+  if (batchConnectQueue.active > 0) batchConnectQueue.active--;
+};
+
+const formatTokenDisplayName = (token) => {
+  if (!token) return "";
+  const name = token.name || "";
+  const server = token.server || "";
+  if (!server && !name) return token.id || "";
+  if (name) {
+    const parts = name.split("服_");
+    if (parts.length >= 3) return `${parts[0]}-${parts[parts.length - 1]}`;
+    if (server && parts.length === 2) return `${server}-${parts[parts.length - 1]}`;
+  }
+  return server && name ? `${server}-${name}` : server || name;
+};
+
+/** 批量连接 */
+const batchConnectSelected = async () => {
+  if (selectedTokens.value.length === 0) return;
+  isBatchConnecting.value = true;
+
+  const total = selectedTokens.value.length;
+  let successCount = 0;
+  let failCount = 0;
+
+  const taskPromises = selectedTokens.value.map(async (tokenId) => {
+    const token = tokens.value.find((t) => t.id === tokenId);
+    const displayName = formatTokenDisplayName(token) || tokenId;
+
+    await waitForBatchConnectSlot();
+    try {
+      await ensureConnection(tokenId);
+      releaseConnectionSlot();
+      successCount++;
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${displayName} 连接成功`,
+        type: "success",
+      });
+    } catch (err) {
+      failCount++;
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${displayName} 连接失败: ${err.message || err}`,
+        type: "error",
+      });
+    } finally {
+      releaseBatchConnectSlot();
+    }
+  });
+
+  await Promise.all(taskPromises);
+  isBatchConnecting.value = false;
+  batchConnectQueue.active = 0;
+
+  if (failCount === 0) {
+    message.success(`全部 ${successCount} 个账号连接成功`);
+  } else {
+    message.warning(`连接完成：${successCount} 成功，${failCount} 失败`);
+  }
+};
+
+/** 批量断开 */
+const batchDisconnectSelected = async () => {
+  if (selectedTokens.value.length === 0) return;
+  isBatchDisconnecting.value = true;
+
+  let successCount = 0;
+
+  for (const tokenId of selectedTokens.value) {
+    const token = tokens.value.find((t) => t.id === tokenId);
+    const displayName = formatTokenDisplayName(token) || tokenId;
+
+    try {
+      const status = tokenStore.getWebSocketStatus(tokenId);
+      if (status === "connected" || status === "connecting") {
+        tokenStore.closeWebSocketConnection(tokenId);
+        successCount++;
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${displayName} 已断开`,
+          type: "success",
+        });
+      } else {
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${displayName} 未连接，跳过`,
+          type: "info",
+        });
+      }
+    } catch (err) {
+      addLog({
+        time: new Date().toLocaleTimeString(),
+        message: `${displayName} 断开失败: ${err.message || err}`,
+        type: "error",
+      });
+    }
+  }
+
+  isBatchDisconnecting.value = false;
+  message.success(`断开完成，共 ${successCount} 个账号`);
+};
+
+/** 刷新Token信息 */
+const refreshSelectedTokenInfo = () => {
+  if (selectedTokens.value.length === 0) return;
+
+  dialog.warning({
+    title: "刷新Token信息",
+    content: `即将刷新 ${selectedTokens.value.length} 个账号的Token信息。
+
+预计耗时：约3-5秒/个账号，刷新期间请勿操作`,
+    positiveText: "开始刷新",
+    negativeText: "取消",
+    onPositiveClick: async () => {
+      isRefreshingTokens.value = true;
+      let successCount = 0;
+      let failCount = 0;
+
+      const total = selectedTokens.value.length;
+      const loadingMsg = message.loading(
+        `正在刷新Token信息 (0/${total})`,
+        { duration: 0 }
+      );
+
+      for (let i = 0; i < total; i++) {
+        const tokenId = selectedTokens.value[i];
+        const token = tokenStore.gameTokens.find((t) => t.id === tokenId);
+        const displayName = (token?.name) || tokenId;
+
+        loadingMsg.content = `正在刷新Token信息 (${i + 1}/${total}): ${displayName}`;
+
+        try {
+          tokenStore.closeWebSocketConnection(tokenId);
+          await new Promise((r) => setTimeout(r, 300));
+          tokenStore.selectToken(tokenId, true);
+          await new Promise((r) => setTimeout(r, 1500));
+          tokenStore.closeWebSocketConnection(tokenId);
+          successCount++;
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            message: `${displayName} Token信息刷新成功`,
+            type: "success",
+          });
+        } catch (err) {
+          console.error(`刷新Token "${displayName}" 失败:`, err);
+          failCount++;
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            message: `${displayName} Token信息刷新失败: ${err.message || err}`,
+            type: "error",
+          });
+        }
+
+        if (i < total - 1) {
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      }
+
+      loadingMsg.destroy();
+      isRefreshingTokens.value = false;
+
+      if (failCount === 0) {
+        message.success(`全部 ${successCount} 个账号Token信息刷新成功`);
+      } else {
+        message.warning(`刷新完成：${successCount} 成功，${failCount} 失败`);
+      }
+    },
+    onClose: () => {},
+  });
+};
+
+// ==================== 江湖黑市采购配置 ====================
+
+const showBlackMarketBuyModal = ref(false);
+const blackMarketBuyList = ref(batchSettings.blackMarketPurchaseList || []);
+
+const selectAllBlackMarketItems = () => {
+  blackMarketBuyList.value = blackMarketGoods.map((item) => item.goodsIndex);
+};
+
+const clearAllBlackMarketItems = () => {
+  blackMarketBuyList.value = [];
+};
+
+const saveBlackMarketBuyConfig = () => {
+  batchSettings.blackMarketPurchaseList = [...blackMarketBuyList.value];
+  showBlackMarketBuyModal.value = false;
+  message.success(
+    `黑市采购配置已保存，共 ${blackMarketBuyList.value.length} 个商品`
+  );
+};
 
 const startBatch = async () => {
   if (selectedTokens.value.length === 0) return;
@@ -5879,20 +6221,16 @@ const stopBatch = () => {
 
 <style scoped>
 .batch-daily-tasks {
-  min-height: 100vh;
-  padding: 20px;
-  background: linear-gradient(135deg, #d6e8ff 0%, #eaf3ff 50%, #f0f7ff 100%);
+  /* No background/padding - layout provides bg-gray-100 and p-6 */
   box-sizing: border-box;
-}
-
-[data-theme="dark"] .batch-daily-tasks {
-  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
 }
 
 .main-layout {
   display: flex;
   gap: 20px;
-  height: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  height: calc(100vh - 112px);
   overflow: hidden;
 }
 
@@ -5908,7 +6246,7 @@ const stopBatch = () => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  height: 700px;
+  gap: 20px;
 }
 
 .page-header {
@@ -5916,6 +6254,8 @@ const stopBatch = () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .token-item {
@@ -5927,6 +6267,10 @@ const stopBatch = () => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: #FFFFFF;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
 }
 
 .custom-card-header {
@@ -5942,6 +6286,7 @@ const stopBatch = () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #111827;
 }
 
 .log-header-controls {
@@ -5956,8 +6301,9 @@ const stopBatch = () => {
 .cron-parser {
   margin-top: 12px;
   padding: 12px;
-  background-color: var(--bg-tertiary);
+  background-color: #EEF2FF;
   border-radius: 8px;
+  border: 1px solid #C7D2FE;
 }
 
 .cron-validation {
@@ -5967,18 +6313,18 @@ const stopBatch = () => {
 }
 
 .cron-validation.success {
-  background-color: rgba(24, 160, 88, 0.12);
+  background-color: rgba(5, 150, 105, 0.12);
 }
 
 .cron-validation.error {
-  background-color: rgba(235, 87, 87, 0.12);
+  background-color: rgba(220, 38, 38, 0.12);
 }
 
 .cron-next-runs h4 {
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #111827;
 }
 
 .cron-next-runs ul {
@@ -5990,8 +6336,8 @@ const stopBatch = () => {
 .cron-next-runs li {
   padding: 6px 0;
   font-size: 13px;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+  color: #6B7280;
+  border-bottom: 1px solid #F3F4F6;
 }
 
 .cron-next-runs li:last-child {
@@ -6014,12 +6360,13 @@ const stopBatch = () => {
 .log-container {
   flex: 1;
   overflow-y: auto;
-  background: #f5f5f5;
+  background: #F9FAFB;
   padding: 10px;
-  border-radius: 4px;
+  border-radius: 6px;
   margin-top: 10px;
   font-family: monospace;
   min-height: 200px;
+  border: 1px solid #E5E7EB;
 }
 
 .log-item {
@@ -6028,23 +6375,23 @@ const stopBatch = () => {
 }
 
 .log-item.error {
-  color: #d03050;
+  color: #DC2626;
 }
 
 .log-item.success {
-  color: #18a058;
+  color: #059669;
 }
 
 .log-item.warning {
-  color: #f0a020;
+  color: #D97706;
 }
 
 .log-item.info {
-  color: #333;
+  color: #374151;
 }
 
 .time {
-  color: #999;
+  color: #9CA3AF;
   margin-right: 8px;
 }
 
@@ -6070,7 +6417,7 @@ const stopBatch = () => {
 
 .setting-label {
   font-size: 14px;
-  color: #666;
+  color: #374151;
 }
 
 .setting-switches {
@@ -6084,7 +6431,7 @@ const stopBatch = () => {
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #F3F4F6;
 }
 
 .switch-row:last-child {
@@ -6093,7 +6440,7 @@ const stopBatch = () => {
 
 .switch-label {
   font-size: 14px;
-  color: #666;
+  color: #374151;
 }
 
 /* Responsive Design */
@@ -6192,35 +6539,26 @@ const stopBatch = () => {
     gap: 4px;
   }
 
-  /* 批量功法残卷赠送样式 */
   .recipient-info:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
   }
 
-  /* 头像悬停效果 */
   .avatar-container:hover {
     transform: scale(1.05);
     box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
   }
 
-  /* 加载动画 */
   @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-
-    100% {
-      transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
-  /* Token分组管理样式 */
   .group-selection-section {
     padding: 12px;
-    background-color: #f5f7fa;
+    background-color: #F9FAFB;
     border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #E5E7EB;
   }
 
   .group-tag {
@@ -6243,7 +6581,6 @@ const stopBatch = () => {
     font-weight: 600;
   }
 
-  /* 响应式设计 */
   @media (max-width: 600px) {
     .recipient-info {
       flex-direction: column;

@@ -34,3 +34,31 @@
 
   return result;
 }
+
+// ==================== 活动周期工具 ====================
+
+// 活动周期起始时间: 2025-12-12 12:00:00 (黑市周开始)
+const ACTIVITY_CYCLE_START = new Date("2025-12-12T12:00:00").getTime();
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const ACTIVITY_CYCLE_MS = 3 * WEEK_MS; // 3周一循环
+
+/**
+ * 获取当前活动周类型
+ * @returns {"黑市周"|"招募周"|"宝箱周"|null}
+ */
+export function getActivityWeek() {
+  const elapsed = Date.now() - ACTIVITY_CYCLE_START;
+  if (elapsed < 0) return null;
+  const cyclePos = elapsed % ACTIVITY_CYCLE_MS;
+  if (cyclePos < WEEK_MS) return "黑市周";
+  if (cyclePos < 2 * WEEK_MS) return "招募周";
+  return "宝箱周";
+}
+
+/**
+ * 判断当前是否为黑市周
+ * @returns {boolean}
+ */
+export function isBlackMarketWeek() {
+  return getActivityWeek() === "黑市周";
+}

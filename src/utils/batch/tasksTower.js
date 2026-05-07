@@ -1217,6 +1217,331 @@ export function createTasksTower(deps) {
     message.success("批量一键合成结束");
   };
 
+  /**
+   * 免费扭蛋 - 仅周二/周四/周六可执行
+   */
+  const gachaFreeDrawWeekly = async () => {
+    if (selectedTokens.value.length === 0) return;
+
+    const day = new Date().getDay();
+    if (![2, 4, 6].includes(day)) {
+      message.warning(`今天不是免费扭蛋日（仅周二/周四/周六），当前周${day}`);
+      return;
+    }
+
+    isRunning.value = true;
+    shouldStop.value = false;
+
+    const taskPromises = selectedTokens.value.map(async (tokenId) => {
+      if (shouldStop.value) return;
+
+      tokenStatus.value[tokenId] = "running";
+      currentRunningTokenId.value = tokenId;
+
+      const token = tokens.value.find((t) => t.id === tokenId);
+
+      try {
+        await ensureConnection(tokenId);
+        const result = await tokenStore.sendMessageWithPromise(
+          tokenId,
+          "gacha_drawreward",
+          { num: 1, isGroup: false },
+          5000
+        );
+
+        if (result && !result.error) {
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            message: `${token.name} 免费扭蛋成功`,
+            type: "success",
+          });
+        } else {
+          const errMsg = result?.error || result?.msg || "未知错误";
+          if (errMsg.includes("已经") || errMsg.includes("已抽") || errMsg.includes("次数")) {
+            addLog({
+              time: new Date().toLocaleTimeString(),
+              message: `${token.name} 免费扭蛋已用完`,
+              type: "warning",
+            });
+          } else {
+            addLog({
+              time: new Date().toLocaleTimeString(),
+              message: `${token.name} 免费扭蛋失败: ${errMsg}`,
+              type: "error",
+            });
+          }
+        }
+      } catch (err) {
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${token.name} 免费扭蛋异常: ${err.message || err}`,
+          type: "error",
+        });
+      } finally {
+        tokenStore.closeWebSocketConnection(tokenId);
+        releaseConnectionSlot();
+      }
+    });
+
+    await Promise.all(taskPromises);
+    isRunning.value = false;
+    currentRunningTokenId.value = null;
+    message.success("免费扭蛋结束");
+  };
+
+  /**
+   * 周一免费礼 - 仅周一可执行
+   */
+  const mondayFreeGift = async () => {
+    if (selectedTokens.value.length === 0) return;
+
+    const day = new Date().getDay();
+    if (day !== 1) {
+      message.warning("今天不是周一，无法领取周一免费礼");
+      return;
+    }
+
+    isRunning.value = true;
+    shouldStop.value = false;
+
+    const taskPromises = selectedTokens.value.map(async (tokenId) => {
+      if (shouldStop.value) return;
+
+      tokenStatus.value[tokenId] = "running";
+      currentRunningTokenId.value = tokenId;
+
+      const token = tokens.value.find((t) => t.id === tokenId);
+
+      try {
+        await ensureConnection(tokenId);
+        const result = await tokenStore.sendMessageWithPromise(
+          tokenId,
+          "activity_claimrolluppack",
+          { id: 17 },
+          5000
+        );
+
+        if (result && !result.error) {
+          addLog({
+            time: new Date().toLocaleTimeString(),
+            message: `${token.name} 周一免费礼领取成功`,
+            type: "success",
+          });
+        } else {
+          const errMsg = result?.error || result?.msg || "未知错误";
+          if (errMsg.includes("已经") || errMsg.includes("已领取")) {
+            addLog({
+              time: new Date().toLocaleTimeString(),
+              message: `${token.name} 周一免费礼已领取`,
+              type: "warning",
+            });
+          } else {
+            addLog({
+              time: new Date().toLocaleTimeString(),
+              message: `${token.name} 周一免费礼领取失败: ${errMsg}`,
+              type: "error",
+            });
+          }
+        }
+      } catch (err) {
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${token.name} 周一免费礼异常: ${err.message || err}`,
+          type: "error",
+        });
+      } finally {
+        tokenStore.closeWebSocketConnection(tokenId);
+        releaseConnectionSlot();
+      }
+    });
+
+    await Promise.all(taskPromises);
+    isRunning.value = false;
+    currentRunningTokenId.value = null;
+    message.success("周一免费礼结束");
+  };
+
+  /**
+   * 十殿星级挑战 - 8关卡多步战斗
+   */
+  const batchStarChallenge = async () => {
+    if (selectedTokens.value.length === 0) return;
+
+    isRunning.value = true;
+    shouldStop.value = false;
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const R = 500; // 基础延迟
+
+    // 带重试的安全发送
+    const safeSend = async (tokenId, cmd, data = {}, retries = 1, interval = 300, timeout = 5000) => {
+      for (let i = 0; i <= retries; i++) {
+        try {
+          return await tokenStore.sendMessageWithPromise(tokenId, cmd, data, timeout);
+        } catch (err) {
+          if (i < retries && /服务器错误|请求超时|timeout|error/i.test(String(err.message || err))) {
+            await sleep(interval);
+            continue;
+          }
+          throw err;
+        }
+      }
+    };
+
+    // 从预设阵容信息提取 battleTeam 和 lordWeaponId
+    const extractTeam = (info, presetTeamType) => {
+      const teamMap = info?.body?.presetTeamMap || info?.presetTeamMap || {};
+      const teamInfo = teamMap[presetTeamType];
+      if (!teamInfo) return null;
+
+      const battleTeam = {};
+      const team = teamInfo.teamInfo || teamInfo.team || {};
+      for (const [pos, hero] of Object.entries(team)) {
+        const heroId = typeof hero === "object" ? (hero.heroId || hero.id) : hero;
+        if (heroId) battleTeam[pos] = heroId;
+      }
+
+      const lordWeaponId = teamInfo.lordWeaponId || teamInfo.weaponId || teamInfo.weapon?.weaponId || 0;
+
+      return { battleTeam, lordWeaponId };
+    };
+
+    const taskPromises = selectedTokens.value.map(async (tokenId) => {
+      if (shouldStop.value) return;
+
+      tokenStatus.value[tokenId] = "running";
+      currentRunningTokenId.value = tokenId;
+
+      const token = tokens.value.find((t) => t.id === tokenId);
+
+      try {
+        await ensureConnection(tokenId);
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${token.name} 开始十殿星级挑战`,
+          type: "info",
+        });
+
+        // 1. 获取十殿信息
+        const info = await safeSend(tokenId, "nmext_getinfo", {}, 1, R, 5000);
+        const roleNMExt = info?.body?.roleNMExt || info?.roleNMExt || {};
+        const starFightCntMap = roleNMExt.starFightCntMap || {};
+        const starBossCompleteMap = roleNMExt.starBossCompleteMap || {};
+
+        let totalStars = 0;
+        const maxLevel = Math.max(...Object.keys(starFightCntMap).map(Number).filter((k) => k >= 1 && k <= 8), 0);
+
+        for (let bossId = 1; bossId <= (maxLevel || 8); bossId++) {
+          if (shouldStop.value) break;
+
+          const fightCount = starFightCntMap[bossId] || 0;
+          if (fightCount >= 5) {
+            addLog({
+              time: new Date().toLocaleTimeString(),
+              message: `${token.name} 第${bossId}关已挑战${fightCount}次，跳过`,
+              type: "info",
+            });
+            continue;
+          }
+
+          const presetTeamType = 100 + bossId;
+
+          try {
+            // 2. 获取预设阵容（发两次确保数据到位）
+            await safeSend(tokenId, "presetteam_typegetinfo", { types: [presetTeamType] }, 1, R);
+            await sleep(R);
+            const teamInfo = await safeSend(tokenId, "presetteam_typegetinfo", { types: [presetTeamType] }, 1, R);
+            await sleep(R);
+
+            // 3. 提取阵容
+            const team = extractTeam(teamInfo, presetTeamType);
+            if (!team) {
+              addLog({
+                time: new Date().toLocaleTimeString(),
+                message: `${token.name} 第${bossId}关获取阵容失败，跳过`,
+                type: "warning",
+              });
+              continue;
+            }
+
+            const { battleTeam, lordWeaponId } = team;
+
+            // 4. 设置阵容
+            await safeSend(tokenId, "presetteam_typesetteam", {
+              typ: presetTeamType,
+              battleTeam,
+              lordWeaponId,
+            }, 1, R);
+            await sleep(R);
+
+            // 5. 计算战力
+            await safeSend(tokenId, "presetteam_typecalcpowerbyteam", {
+              typ: presetTeamType,
+              battleTeam,
+              lordWeaponId,
+            }, 1, R);
+            await sleep(R);
+
+            // 6. 开始战斗
+            const battleResult = await safeSend(tokenId, "nmext_startboss", {
+              bossId,
+              battleTeam,
+              lordWeaponId,
+              presetTeamType,
+            }, 1, R, 8000);
+
+            const body = battleResult?.body || battleResult || {};
+            const isWin = body.result?.isWin || body.result?.iswin || body.result?.win;
+
+            if (isWin) {
+              totalStars++;
+              const starCount = starBossCompleteMap[bossId] || 0;
+              addLog({
+                time: new Date().toLocaleTimeString(),
+                message: `${token.name} 第${bossId}关战斗胜利！(已获${starCount}星)`,
+                type: "success",
+              });
+            } else {
+              addLog({
+                time: new Date().toLocaleTimeString(),
+                message: `${token.name} 第${bossId}关战斗失败，停止挑战`,
+                type: "error",
+              });
+              break; // 失败则停止后续关卡
+            }
+          } catch (err) {
+            addLog({
+              time: new Date().toLocaleTimeString(),
+              message: `${token.name} 第${bossId}关挑战异常: ${err.message || err}`,
+              type: "error",
+            });
+            break;
+          }
+        }
+
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${token.name} 十殿星级挑战完成，共获得${totalStars}星`,
+          type: "success",
+        });
+      } catch (err) {
+        addLog({
+          time: new Date().toLocaleTimeString(),
+          message: `${token.name} 十殿星级挑战异常: ${err.message || err}`,
+          type: "error",
+        });
+      } finally {
+        tokenStore.closeWebSocketConnection(tokenId);
+        releaseConnectionSlot();
+      }
+    });
+
+    await Promise.all(taskPromises);
+    isRunning.value = false;
+    currentRunningTokenId.value = null;
+    message.success("十殿星级挑战结束");
+  };
+
   return {
     climbTower,
     climbWeirdTower,
@@ -1224,6 +1549,9 @@ export function createTasksTower(deps) {
     skinChallenge,
     batchUseItems,
     batchMergeItems,
+    gachaFreeDrawWeekly,
+    mondayFreeGift,
+    batchStarChallenge,
   };
 }
 

@@ -8,19 +8,12 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    ABadge: typeof import('@arco-design/web-vue')['Badge']
     AButton: typeof import('@arco-design/web-vue')['Button']
-    ACard: typeof import('@arco-design/web-vue')['Card']
     ADatePicker: typeof import('@arco-design/web-vue')['DatePicker']
     AEmpty: typeof import('@arco-design/web-vue')['Empty']
-    AForm: typeof import('@arco-design/web-vue')['Form']
-    AFormItem: typeof import('@arco-design/web-vue')['FormItem']
-    AInput: typeof import('@arco-design/web-vue')['Input']
     AList: typeof import('@arco-design/web-vue')['List']
     AListItem: typeof import('@arco-design/web-vue')['ListItem']
     AModal: typeof import('@arco-design/web-vue')['Modal']
-    ASpace: typeof import('@arco-design/web-vue')['Space']
-    ATag: typeof import('@arco-design/web-vue')['Tag']
     AUpload: typeof import('@arco-design/web-vue')['Upload']
     BossTower: typeof import('./src/components/Tower/BossTower.vue')['default']
     BottleHelperCard: typeof import('./src/components/cards/BottleHelperCard.vue')['default']
@@ -69,7 +62,6 @@ declare module 'vue' {
     StudyChallengeCard: typeof import('./src/components/cards/StudyChallengeCard.vue')['default']
     TeamFormation: typeof import('./src/components/Team/TeamFormation.vue')['default']
     TeamStatus: typeof import('./src/components/Team/TeamStatus.vue')['default']
-    ThemeToggle: typeof import('./src/components/Common/ThemeToggle.vue')['default']
     TokenManager: typeof import('./src/components/TokenManager.vue')['default']
     TopClubListPageCard: typeof import('./src/components/cards/TopClubListPageCard.vue')['default']
     TopRankListPageCard: typeof import('./src/components/cards/TopRankListPageCard.vue')['default']
